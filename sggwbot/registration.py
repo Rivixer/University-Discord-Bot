@@ -917,7 +917,9 @@ class InfoModal(Modal):
         )
 
         if member.nick or member.global_name:
-            embed.insert_field_at(1, name="Nick", value=MemberUtils.display_name(member))
+            embed.insert_field_at(
+                1, name="Nick", value=MemberUtils.display_name(member)
+            )
 
         bot_channel = self._bot.get_bot_channel()
         await bot_channel.send(embed=embed)
@@ -1185,7 +1187,9 @@ class MailController:
             text = f.read()
 
         text = (
-            text.replace("{{USER_DISPLAY_NAME}}", f"{MemberUtils.display_name(self._member)}")
+            text.replace(
+                "{{USER_DISPLAY_NAME}}", f"{MemberUtils.display_name(self._member)}"
+            )
             .replace("{{REGISTRATION_CODE}}", self._code_model.code)
             .replace("{{DISCORD_NAME}}", self._member.guild.name)
             .replace("{{CODE_EXPIRATION}}", self._code_model.expire)
@@ -1231,7 +1235,7 @@ class MailController:
             hostname="smtp.gmail.com", port=465, use_tls=True
         ) as smtp:
             try:
-                await smtp.login(username=username, password=password)
+                await smtp.login(username, password)
                 message = self._generate_message()
                 await smtp.send_message(message)
                 self._code_model.add_mail_sent_time(self._index)

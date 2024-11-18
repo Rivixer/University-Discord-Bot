@@ -73,9 +73,8 @@ class Console:
     _file_path: ClassVar[Path | None] = None
     _last_message_time: ClassVar[dt.date | None] = None
 
-    @classmethod
-    @property
-    def _logs_directory(cls) -> Path:
+    @staticmethod
+    def _get_logs_directory() -> Path:
         directory = Path("logs/")
         if not directory.exists():
             directory.mkdir()
@@ -87,9 +86,8 @@ class Console:
         cls.debug("REGISTER ATEXIT")
         atexit.register(cls._append_to_file)
 
-    @classmethod
-    @property
-    def _filename(cls) -> str:
+    @staticmethod
+    def _get_filename() -> str:
         """The name of the file where the logs will be stored.
         Contains the current datetime in the format yy-mm-dd_HH-MM-SS.
         """
@@ -99,7 +97,7 @@ class Console:
 
     @classmethod
     def _create_file_path(cls) -> None:
-        cls._file_path = cls._logs_directory / (cls._filename + ".log")
+        cls._file_path = cls._get_logs_directory() / (cls._get_filename() + ".log")
         with open(cls._file_path, "a", encoding="utf-8") as f:
             f.write(f"DEBUG = {_DEBUG}\n")
 
@@ -112,9 +110,10 @@ class Console:
         with open(file_path, "a", encoding="utf-8") as f:
             for log in cls._logs:
                 f.writelines(log + "\n")
+        cls._logs.clear()
 
     @classmethod
-    def _print_to_console(
+    def _print_to_console(  # pylint: disable=too-many-arguments
         cls,
         text: str,
         type_: str,
@@ -169,7 +168,7 @@ class Console:
             cls._append_to_file()
 
     @classmethod
-    def specific(
+    def specific(  # pylint: disable=too-many-arguments
         cls,
         text: str,
         type_: str,
@@ -287,4 +286,5 @@ class Console:
         sys.exit()
 
 
-Console()
+if __name__ == "__main__":
+    Console()

@@ -22,4 +22,5 @@ jobs:
         python-version: "3.10"
         cache: 'pip'
     - run: pip install -r requirements.txt
+    - run: pip install pytest
     - run: pytest

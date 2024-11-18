@@ -261,13 +261,13 @@ class MessagingCog(commands.Cog):
             required=False,
             default=False,
         ),
-        attachment: bool = SlashOption(
-            description="Remove the attachment.",
+        attachments: bool = SlashOption(
+            description="Remove all attachments.",
             required=False,
             default=False,
         ),
     ) -> None:
-        if not any((text, embed, attachment)):
+        if not any((text, embed, attachments)):
             raise ValueError("At least one element must be selected as True.")
 
         channel = interaction.channel
@@ -283,10 +283,44 @@ class MessagingCog(commands.Cog):
         if embed:
             message_kwargs["embed"] = None
 
-        if attachment:
-            message_kwargs["file"] = None
+        if attachments:
+            message_kwargs["attachments"] = []
 
         await message.edit(**message_kwargs)
+
+    @_message.subcommand(
+        name="add_attachment", description="Add an attachment to a message."
+    )
+    @InteractionUtils.with_info(
+        before="Adding the attachment...",
+        after="The attachment has been added.",
+        catch_exceptions=[ValueError, DiscordException, AttachmentError],
+    )
+    @InteractionUtils.with_log(show_channel=True)
+    async def _add_attachment(
+        self,
+        interaction: Interaction,
+        message_id: str = SlashOption(
+            description="The ID of the message to add the attachment to.",
+            required=True,
+        ),
+        attachment: Attachment = SlashOption(
+            name="file",
+            description="The attachment to add.",
+            required=True,
+        ),
+    ) -> None:
+        channel = interaction.channel
+        if not isinstance(channel, (TextChannel, Thread)):
+            raise ValueError("Cannot send messages to non-text channels")
+
+        original_message = await channel.fetch_message(int(message_id))
+        message_attachments = original_message.attachments
+
+        new_attachments = message_attachments + [attachment]
+        files = [await self._convert_attachment_to_file(a) for a in new_attachments]
+
+        await original_message.edit(files=files)
 
     @_message.subcommand(
         name="add_reaction",
