@@ -37,20 +37,25 @@ from nextcord.role import Role
 from nextcord.ui import Modal, TextInput
 from nextcord.utils import format_dt
 
-from sggwbot.console import Console, FontColour
-from sggwbot.errors import (
+from university_bot.console import Console, FontColour
+from university_bot.errors import (
     ExceptionData,
     InvalidSettingsFile,
     MissingPermission,
     UpdateEmbedError,
 )
-from sggwbot.models import ControllerWithEmbed, EmbedModel, Model
-from sggwbot.utils import InteractionUtils, Matcher, SmartDict, wait_until_midnight
+from university_bot.models import ControllerWithEmbed, EmbedModel, Model
+from university_bot.utils import (
+    InteractionUtils,
+    Matcher,
+    SmartDict,
+    wait_until_midnight,
+)
 
 if TYPE_CHECKING:
     from nextcord.guild import Guild
     from nextcord.message import PartialMessage
-    from sggw_bot import SGGWBot
+    from university_bot import UniversityBot
 
 
 class SummaryEventTypes(Flag):
@@ -66,12 +71,12 @@ class CalendarCog(commands.Cog):
 
     __slots__ = ("_bot", "_ctrl", "_model", "_reminder_ctrl")
 
-    _bot: SGGWBot
+    _bot: UniversityBot
     _ctrl: CalendarController
     _model: CalendarModel
     _reminder_ctrl: ReminderController
 
-    def __init__(self, bot: SGGWBot) -> None:
+    def __init__(self, bot: UniversityBot) -> None:
         """Initializes the Calendar cog."""
         self._bot = bot
         self._model = CalendarModel()
@@ -1738,11 +1743,11 @@ class ReminderController:
         "_reminders",
     )
 
-    _bot: SGGWBot
+    _bot: UniversityBot
     _calendar_model: CalendarModel
     _reminders: list[Reminder]
 
-    def __init__(self, bot: SGGWBot, calendar_model: CalendarModel):
+    def __init__(self, bot: UniversityBot, calendar_model: CalendarModel):
         self._bot = bot
         self._calendar_model = calendar_model
         self._reminders = []
@@ -2587,6 +2592,6 @@ class ReminderModal(Modal):
         return list(sorted(smart_dict.keys()))
 
 
-def setup(bot: SGGWBot):
+def setup(bot: UniversityBot):
     """Loads the CalendarCog cog."""
     bot.add_cog(CalendarCog(bot))

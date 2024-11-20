@@ -42,7 +42,7 @@ if TYPE_CHECKING:
     from nextcord.emoji import Emoji
     from nextcord.message import Attachment, Message
 
-    from .sggw_bot import SGGWBot
+    from .university_bot import UniversityBot
 
 
 class Model(ABC):
@@ -174,12 +174,12 @@ class EmbedModel(ABC):
     ----------
     model: :class:`.Model`
         The model of the function.
-    bot: :class:`SGGWBot`
+    bot: :class:`UniversityBot`
         The Discord bot instance.
     """
 
     model: Model
-    bot: SGGWBot
+    bot: UniversityBot
 
     @property
     def _embeds_directory(self) -> Path:

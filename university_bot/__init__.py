@@ -23,4 +23,4 @@ __copyright__ = "Copyright 2023, 2024 Wiktor Jaworski"
 __version__ = "0.9.2"
 
 from . import console, errors, utils
-from .sggw_bot import SGGWBot
+from .university_bot import UniversityBot

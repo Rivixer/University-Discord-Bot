@@ -24,8 +24,7 @@ import functools
 import json
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import (TYPE_CHECKING, Any, Awaitable, Callable, Concatenate,
-                    ParamSpec)
+from typing import TYPE_CHECKING, Any, Awaitable, Callable, Concatenate, ParamSpec
 
 import nextcord
 from nextcord.application_command import SlashOption
@@ -37,9 +36,9 @@ from nextcord.ext import commands, tasks
 from nextcord.interactions import Interaction
 from nextcord.message import Attachment
 
-from sggwbot.errors import UpdateEmbedError
-from sggwbot.models import ControllerWithEmbed, EmbedModel, Model
-from sggwbot.utils import Console, FontColour, InteractionUtils
+from university_bot.errors import UpdateEmbedError
+from university_bot.models import ControllerWithEmbed, EmbedModel, Model
+from university_bot.utils import Console, FontColour, InteractionUtils
 
 if TYPE_CHECKING:
     from nextcord.member import Member
@@ -47,7 +46,7 @@ if TYPE_CHECKING:
     from nextcord.raw_models import RawReactionActionEvent
     from nextcord.role import Role
 
-    from sggwbot import SGGWBot
+    from university_bot import UniversityBot
 
 _P = ParamSpec("_P")
 _FUNC = Callable[Concatenate[Any, Interaction, str, _P], Awaitable[Any]]
@@ -61,10 +60,10 @@ class RoleAssignment(commands.Cog):
         "_ctrl",
     )
 
-    _bot: SGGWBot
+    _bot: UniversityBot
     _controllers: dict[str, RoleAssignmentController]
 
-    def __init__(self, bot: SGGWBot) -> None:
+    def __init__(self, bot: UniversityBot) -> None:
         """Initialize the cog."""
 
         self._bot = bot
@@ -582,6 +581,6 @@ class RoleAssignmentController(ControllerWithEmbed):
         return role_to_add
 
 
-def setup(bot: SGGWBot):
+def setup(bot: UniversityBot):
     """Loads the RoleAssignment cog."""
     bot.add_cog(RoleAssignment(bot))

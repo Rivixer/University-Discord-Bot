@@ -14,7 +14,7 @@ from nextcord.ext import commands
 from nextcord.interactions import Interaction
 
 if TYPE_CHECKING:
-    from sggwbot.sggw_bot import SGGWBot
+    from university_bot import UniversityBot
 
 
 class ExampleCog(commands.Cog):
@@ -22,9 +22,9 @@ class ExampleCog(commands.Cog):
 
     __slots__ = ("bot",)
 
-    _bot: SGGWBot
+    _bot: UniversityBot
 
-    def __init__(self, bot: SGGWBot):
+    def __init__(self, bot: UniversityBot):
         self._bot = bot
 
     @nextcord.slash_command(name="example", description="Example command")
@@ -32,6 +32,6 @@ class ExampleCog(commands.Cog):
         await interaction.response.send_message("Hello, world!", ephemeral=True)
 
 
-def setup(bot: SGGWBot):
+def setup(bot: UniversityBot):
     """Loads the ExampleCog cog."""
     bot.add_cog(ExampleCog(bot))

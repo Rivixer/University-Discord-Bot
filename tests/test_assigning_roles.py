@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Generator
 import pytest
 from pytest import MonkeyPatch
 
-from sggwbot.role_assignment import (
+from university_bot.cogs.role_assignment import (
     RoleAssignment,
     RoleAssignmentController,
     RoleAssignmentEmbedModel,

@@ -6,35 +6,35 @@ from dataclasses import dataclass, field
 from typing import Type
 
 
-class SGGWBotError(Exception):
-    """Base exception for all SGGWBot exceptions."""
+class UniversityBotError(Exception):
+    """Base exception for all UniversityBot exceptions."""
 
 
-class UpdateEmbedError(SGGWBotError):
+class UpdateEmbedError(UniversityBotError):
     """Cannot update the embed."""
 
 
-class RegistrationError(SGGWBotError):
+class RegistrationError(UniversityBotError):
     """Registration failed."""
 
 
-class AttachmentError(SGGWBotError):
+class AttachmentError(UniversityBotError):
     """Attachment error."""
 
 
-class NoVoiceConnection(SGGWBotError):
+class NoVoiceConnection(UniversityBotError):
     """No voice connection."""
 
 
-class InvalidSettingsFile(SGGWBotError):
+class InvalidSettingsFile(UniversityBotError):
     """Invalid settings file."""
 
 
-class MissingPermission(SGGWBotError):
+class MissingPermission(UniversityBotError):
     """Missing permission."""
 
 
-class PluginError(SGGWBotError):
+class PluginError(UniversityBotError):
     """Plugin error."""
 
 

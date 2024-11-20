@@ -28,14 +28,12 @@ from typing import (
     overload,
 )
 
-import nextcord
-from nextcord.channel import TextChannel
-from nextcord.interactions import Interaction
-from nextcord.member import Member
-from nextcord.threads import Thread
+from discord import SlashApplicationCommand, TextChannel, Interaction, Member, Thread
+import discord
+from discord.ext import commands
 
-from sggwbot.console import Console, FontColour
-from sggwbot.errors import ExceptionData
+from university_bot.console import Console, FontColour
+from university_bot.errors import ExceptionData
 
 if TYPE_CHECKING:
     from nextcord.user import User
@@ -196,7 +194,7 @@ class InteractionUtils(ABC):
                 **kwargs: _P.kwargs,
             ) -> Awaitable[Any] | None:
                 async def catch_error(exc: Exception, exc_data: ExceptionData) -> None:
-                    err_msg = f"** [ERROR] ** {exc}"
+                    err_msg = f"**[ERROR]** {exc}"
 
                     if exc_data.with_traceback_in_response:
                         trcbck = traceback.format_exc()
@@ -211,7 +209,7 @@ class InteractionUtils(ABC):
                         try:
                             msg = await interaction.original_message()
                             await msg.edit(content=err_msg)
-                        except nextcord.errors.NotFound:
+                        except discord.errors.NotFound:
                             await interaction.send(err_msg, ephemeral=True)
 
                     comm_name = InteractionUtils._command_name(interaction)
@@ -293,6 +291,31 @@ class PathUtils(ABC):  # pylint: disable=too-few-public-methods
         if ret.endswith("_model"):
             return "_".join(ret.split("_")[:-1])
         return ret
+
+
+class SlashCommandUtils(ABC):  # pylint: disable=too-few-public-methods
+    """A class containing utility methods for slash commands."""
+
+    @staticmethod
+    def unregister_disabled_commands(
+        cog: commands.Cog,
+        commands_config: dict[str, bool],
+    ) -> None:
+        """Unregisters slash commands that are disabled in the config.
+
+        Parameters
+        ----------
+        cog: :class:`commands.Cog`
+            The cog to unregister the commands from.
+        mapping: :class:`dict`[:class:`str`, :class:`bool`]
+            A mapping of command names to their enabled/disabled status.
+        """
+        mapping = {cmd.name: cmd for cmd in cog.application_commands}
+        config = {name: getattr(commands_config, name, True) for name in mapping.keys()}
+
+        for name, command in mapping.items():
+            if not config.get(name, True) and command in cog.application_commands:
+                cog.application_commands.remove(command)
 
 
 class MemberUtils(ABC):  # pylint: disable=too-few-public-methods

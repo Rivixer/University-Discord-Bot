@@ -10,7 +10,7 @@ import pytest
 from nextcord.embeds import Embed
 from pytest import MonkeyPatch
 
-from sggwbot.registration import (
+from university_bot.cogs.registration import (
     CodeController,
     CodeModel,
     MailLog,

@@ -19,12 +19,12 @@ from nextcord.ext import commands
 from nextcord.interactions import Interaction
 from nextcord.message import Attachment
 
-from sggwbot.errors import UpdateEmbedError
-from sggwbot.models import ControllerWithEmbed, EmbedModel, Model
-from sggwbot.utils import InteractionUtils
+from university_bot.errors import UpdateEmbedError
+from university_bot.models import ControllerWithEmbed, EmbedModel, Model
+from university_bot.utils import InteractionUtils
 
 if TYPE_CHECKING:
-    from sggw_bot import SGGWBot
+    from university_bot import UniversityBot
 
 
 class InformationCog(commands.Cog):
@@ -35,10 +35,10 @@ class InformationCog(commands.Cog):
         "_ctrl",
     )
 
-    _bot: SGGWBot
+    _bot: UniversityBot
     _ctrl: InformationController
 
-    def __init__(self, bot: SGGWBot) -> None:
+    def __init__(self, bot: UniversityBot) -> None:
         """Initialize the cog."""
         self._bot = bot
         model = InformationModel()
@@ -186,6 +186,6 @@ class InformationController(ControllerWithEmbed):
     """
 
 
-def setup(bot: SGGWBot):
+def setup(bot: UniversityBot):
     """Loads the InformationCog cog."""
     bot.add_cog(InformationCog(bot))

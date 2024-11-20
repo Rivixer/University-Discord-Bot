@@ -58,18 +58,18 @@ import nextcord
 from nextcord.ext import commands, tasks
 from nextcord.interactions import Interaction
 
-from sggwbot.console import Console, FontColour
-from sggwbot.errors import (
+from university_bot.console import Console, FontColour
+from university_bot.errors import (
     ExceptionData,
     InvalidSettingsFile,
     PluginError,
     PluginNotFoundError,
     PluginOperationError,
 )
-from sggwbot.utils import InteractionUtils
+from university_bot.utils import InteractionUtils
 
 if TYPE_CHECKING:
-    from sggw_bot import SGGWBot
+    from university_bot import UniversityBot
 
 IGNORED_DIRECTORIES = {"example", "packages", "requirements"}
 
@@ -100,12 +100,12 @@ class PluginsCog(commands.Cog):
         "_list",
     )
 
-    _bot: SGGWBot
+    _bot: UniversityBot
     _list: list[Plugin]
 
     _DIR: ClassVar[str] = "plugins"
 
-    def __init__(self, bot: SGGWBot) -> None:
+    def __init__(self, bot: UniversityBot) -> None:
         """Initializes the cog."""
         self._bot = bot
         self._list = []
@@ -432,6 +432,6 @@ class Plugin:
         self.status = PluginStatus.DISABLED
 
 
-def setup(bot: SGGWBot):
+def setup(bot: UniversityBot):
     """Loads the PluginsCog."""
     bot.add_cog(PluginsCog(bot))

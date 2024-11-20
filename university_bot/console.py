@@ -6,7 +6,7 @@ All information is added to the `logs/<bot_launch_date>.log` file.
 Examples
 -------- ::
 
-    from sggwbot.console import Console, FontColour
+    from university_bot.console import Console, FontColour
     
     Console.info("Hello World!")
     Console.debug("Hello World!")
@@ -24,6 +24,8 @@ from enum import Enum
 from pathlib import Path
 from typing import ClassVar, NoReturn
 
+import pydantic
+
 _DEBUG = True
 
 
@@ -35,12 +37,12 @@ class FontColour(Enum):
 
     Uses print function: ::
 
-        from sggwbot.console import FontColour
+        from university_bot.console import FontColour
         print(f"{FontColour.RED}Hello World!{FontColour.RESET}")
 
     Uses Console class: ::
 
-        from sggwbot.console import Console, FontColour
+        from university_bot.console import Console, FontColour
         Console.specific("Hello World!", "TEST", FontColour.RED)
     """
 
@@ -62,7 +64,7 @@ class Console:
     Examples
     -------- ::
 
-        from sggwbot.console import Console
+        from university_bot.console import Console
 
         Console.info("Hello World!")
         Console.debug("Hello World!")
@@ -130,7 +132,14 @@ class Console:
         _bold_type = "\033[1m" if bold_type else ""
 
         if isinstance(exception, Exception):
-            exc = "\n" + traceback.format_exc()
+            if isinstance(exception, pydantic.ValidationError):
+                error_details = "\n".join(
+                    f"{err['loc']}: {err['msg']}" for err in exception.errors()
+                )
+                exc = f"\n{error_details}"
+            else:
+                exc = f"\n| {exception}"
+                exc = "\n" + traceback.format_exc()
         elif isinstance(exception, str):
             exc = "| " + exception
         else:
@@ -254,7 +263,7 @@ class Console:
         cls._logs.append(f'\n{" IMPORTANT ERROR ":-^33}')
         cls._print_to_console(
             text,
-            "!ERROR!",
+            "ERROR",
             color,
             bold_text=bold_text,
             bold_type=bold_type,
@@ -273,7 +282,7 @@ class Console:
         cls._logs.append(f'\n{" CRITICAL ERROR ":=^33}')
         cls._print_to_console(
             text,
-            "!ERROR!",
+            "ERROR",
             FontColour.RED,
             bold_text=True,
             bold_type=True,

@@ -14,11 +14,11 @@ from nextcord.errors import DiscordException
 from nextcord.ext import commands
 from nextcord.interactions import Interaction
 
-from sggwbot.console import Console
-from sggwbot.utils import InteractionUtils
+from university_bot.console import Console
+from university_bot.utils import InteractionUtils
 
 if TYPE_CHECKING:
-    from sggwbot import SGGWBot
+    from university_bot import UniversityBot
 
 
 class StatusCog(commands.Cog):
@@ -27,9 +27,9 @@ class StatusCog(commands.Cog):
     __slots__ = ("_bot",)
 
     _STATUS_PATH = Path("data/status.txt")
-    _bot: SGGWBot
+    _bot: UniversityBot
 
-    def __init__(self, bot: SGGWBot) -> None:
+    def __init__(self, bot: UniversityBot) -> None:
         self._bot = bot
 
     @commands.Cog.listener(name="on_ready")
@@ -102,6 +102,6 @@ class StatusCog(commands.Cog):
         self._save_data_to_file(activity_type, text)
 
 
-def setup(bot: SGGWBot):
+def setup(bot: UniversityBot):
     """Loads the StatusCog cog."""
     bot.add_cog(StatusCog(bot))

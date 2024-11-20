@@ -11,7 +11,7 @@ import pytest
 from nextcord.ui import TextInput
 from pytest import MonkeyPatch
 
-from sggwbot.calendar import (
+from university_bot.cogs.calendar import (
     CalendarController,
     CalendarEmbedModel,
     CalendarModel,

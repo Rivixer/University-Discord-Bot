@@ -18,12 +18,12 @@ from nextcord.interactions import Interaction
 from nextcord.message import Attachment, MessageReference
 from nextcord.threads import Thread
 
-from sggwbot.console import Console, FontColour
-from sggwbot.errors import AttachmentError, ExceptionData
-from sggwbot.utils import InteractionUtils, MemberUtils
+from university_bot.console import Console, FontColour
+from university_bot.errors import AttachmentError, ExceptionData
+from university_bot.utils import InteractionUtils, MemberUtils
 
 if TYPE_CHECKING:
-    from sggw_bot import SGGWBot
+    from university_bot import UniversityBot
 
 
 class MessagingCog(commands.Cog):
@@ -31,9 +31,9 @@ class MessagingCog(commands.Cog):
 
     __slots__ = ("_bot",)
 
-    _bot: SGGWBot
+    _bot: UniversityBot
 
-    def __init__(self, bot: SGGWBot) -> None:
+    def __init__(self, bot: UniversityBot) -> None:
         self._bot = bot
 
     @staticmethod
@@ -461,6 +461,6 @@ class MessagingCog(commands.Cog):
         )
 
 
-def setup(bot: SGGWBot) -> None:
+def setup(bot: UniversityBot) -> None:
     """Loads the Messaging cog."""
     bot.add_cog(MessagingCog(bot))

@@ -21,15 +21,15 @@ from nextcord.ext import commands, tasks
 from nextcord.interactions import Interaction
 from nextcord.message import Attachment
 
-import sggwbot
-from sggwbot.console import Console
-from sggwbot.errors import UpdateEmbedError
-from sggwbot.models import ControllerWithEmbed, EmbedModel, Model
-from sggwbot.utils import InteractionUtils, ProjectUtils
+import university_bot
+from university_bot.console import Console
+from university_bot.errors import UpdateEmbedError
+from university_bot.models import ControllerWithEmbed, EmbedModel, Model
+from university_bot.utils import InteractionUtils, ProjectUtils
 
 if TYPE_CHECKING:
     from nextcord.embeds import Embed
-    from sggw_bot import SGGWBot
+    from university_bot import UniversityBot
 
 
 class ProjectCog(commands.Cog):
@@ -40,10 +40,10 @@ class ProjectCog(commands.Cog):
         "_ctrl",
     )
 
-    _bot: SGGWBot
+    _bot: UniversityBot
     _ctrl: ProjectController
 
-    def __init__(self, bot: SGGWBot) -> None:
+    def __init__(self, bot: UniversityBot) -> None:
         """Initialize the cog."""
         self._bot = bot
         model = ProjectModel()
@@ -195,7 +195,7 @@ class ProjectEmbedModel(EmbedModel):
 
         return super().generate_embed(
             LINES_OF_CODE=f"{lines_of_code} {lines_of_code_text}",
-            VERSION=sggwbot.__version__,
+            VERSION=university_bot.__version__,
         )
 
 
@@ -203,6 +203,6 @@ class ProjectController(ControllerWithEmbed):
     """Represents the project controller."""
 
 
-def setup(bot: SGGWBot):
+def setup(bot: UniversityBot):
     """Loads the ProjectCog cog."""
     bot.add_cog(ProjectCog(bot))

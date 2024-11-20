@@ -1,19 +1,19 @@
 # SPDX-License-Identifier: MIT
-"""Main module for SGGWBot."""
+"""Main module for University Bot."""
 
 import logging
 
-from sggwbot.sggw_bot import SGGWBot
+from university_bot import UniversityBot
 
 
 def main() -> None:
     """Run the bot."""
     logging.basicConfig(
-        level=logging.WARN,
+        level=logging.DEBUG,
         format="[%(asctime)s] [%(levelname)s] %(message)s",
         datefmt="%d.%m.%y %H:%M:%S",
     )
-    bot = SGGWBot()
+    bot = UniversityBot()
     bot.main()
 
 

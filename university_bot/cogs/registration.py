@@ -35,16 +35,21 @@ from nextcord.interactions import Interaction
 from nextcord.member import Member
 from nextcord.ui import Modal, TextInput
 
-from sggwbot.console import Console, FontColour
-from sggwbot.errors import ExceptionData, RegistrationError
-from sggwbot.models import Model
-from sggwbot.utils import InteractionUtils, Matcher, MemberUtils, SmartDict
+from university_bot.console import Console, FontColour
+from university_bot.errors import ExceptionData, RegistrationError
+from university_bot.models import Model
+from university_bot.utils import (
+    InteractionUtils,
+    Matcher,
+    MemberUtils,
+    SmartDict,
+)
 
 if TYPE_CHECKING:
     from nextcord.guild import Guild
     from nextcord.message import Message
     from nextcord.role import Role
-    from sggw_bot import SGGWBot
+    from university_bot import UniversityBot
 
 
 class RegistrationCog(commands.Cog):
@@ -55,10 +60,10 @@ class RegistrationCog(commands.Cog):
         "_model",
     )
 
-    _bot: SGGWBot
+    _bot: UniversityBot
     _model: RegistrationModel
 
-    def __init__(self, bot: SGGWBot) -> None:
+    def __init__(self, bot: UniversityBot) -> None:
         """Initializes the :class:`.RegistractionCog` class."""
         self._bot = bot
         self._model = RegistrationModel(bot)
@@ -372,9 +377,9 @@ class EditMemberInfoModal(Modal):
 class RegistrationModel(Model):
     """The model for :class:`.RegistrationCog`"""
 
-    bot: SGGWBot
+    bot: UniversityBot
 
-    def __init__(self, bot: SGGWBot) -> None:
+    def __init__(self, bot: UniversityBot) -> None:
         Model.__init__(self)
         self.bot = bot
 
@@ -859,9 +864,9 @@ class InfoModal(Modal):
 
     __slots__ = ("_bot",)
 
-    _bot: SGGWBot
+    _bot: UniversityBot
 
-    def __init__(self, bot: SGGWBot) -> None:
+    def __init__(self, bot: UniversityBot) -> None:
         super().__init__(title="Rejestracja", timeout=None)
         self._bot = bot
 
@@ -936,7 +941,7 @@ class CodeModal(Modal):
         "_destination_address",
     )
 
-    _bot: SGGWBot
+    _bot: UniversityBot
     _verified_role: Role
     _code_model: CodeModel
     _member_data: MemberData
@@ -944,7 +949,7 @@ class CodeModal(Modal):
 
     def __init__(  # pylint: disable=too-many-arguments
         self,
-        bot: SGGWBot,
+        bot: UniversityBot,
         verified_role: Role,
         code_model: CodeModel,
         member_data: MemberData,
@@ -1252,6 +1257,6 @@ class MailController:
         )
 
 
-def setup(bot: SGGWBot) -> None:
+def setup(bot: UniversityBot) -> None:
     """Loads the RegistrationCog cog."""
     bot.add_cog(RegistrationCog(bot))
