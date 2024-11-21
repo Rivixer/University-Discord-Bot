@@ -1,105 +1,154 @@
 # SPDX-License-Identifier: MIT
-"""A module to control the bot's status."""
+"""A module to control the bot's status.
+
+This module contains a cog to control the bot's status. The bot's status can be
+changed using the `/status` command. The status is saved to a JSON file so that
+it can be restored when the bot restarts. The status can be set to one of the
+following types: playing, listening, watching, streaming, competing, custom or unknown.
+
+Setting the status to "custom" will display the text as the status. The status
+can be reset by setting the type to "unknown".
+"""
 
 from __future__ import annotations
 
+import json
+import os
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-import nextcord
-from nextcord.activity import Activity
-from nextcord.application_command import SlashOption
-from nextcord.enums import ActivityType
-from nextcord.errors import DiscordException
-from nextcord.ext import commands
-from nextcord.interactions import Interaction
+import discord
+from discord import (
+    CustomActivity,
+    ActivityType,
+    Activity,
+    SlashOption,
+    DiscordException,
+    Interaction,
+)
+from discord.ext import commands
+from pydantic import BaseModel, field_validator
 
 from university_bot.console import Console
 from university_bot.utils import InteractionUtils
 
 if TYPE_CHECKING:
+    from discord import BaseActivity
     from university_bot import UniversityBot
+
+
+class Config(BaseModel):
+    """A class for the configuration of the bot's status."""
+
+    data_filepath: Path
+
+    @field_validator("data_filepath", mode="before")
+    @classmethod
+    def _validate_data_filepath(cls, value: str | Path) -> Path:
+        path = Path(value) if not isinstance(value, Path) else value
+
+        if path.name == ".json":
+            raise ValueError(
+                "The path cannot point to a directory "
+                "or a file ambiguously named '.json'."
+            )
+        if (suffix := path.suffix) != ".json":
+            raise ValueError(f"The file must have a .json extension. Found: {suffix}")
+        if not path.parent.exists():
+            raise ValueError(f"The parent directory {path.parent} does not exist.")
+        if not os.access(path.parent, os.W_OK):
+            raise ValueError(f"The parent directory {path.parent} is not writable.")
+
+        return path
 
 
 class StatusCog(commands.Cog):
     """A cog to control the bot's status."""
 
-    __slots__ = ("_bot",)
+    __slots__ = (
+        "bot",
+        "config",
+    )
 
-    _STATUS_PATH = Path("data/status.txt")
-    _bot: UniversityBot
+    bot: UniversityBot
+    config: Config
 
     def __init__(self, bot: UniversityBot) -> None:
-        self._bot = bot
+        self.bot = bot
+        self.config = Config(data_filepath=bot.config["status"]["data_filepath"])
+        self.bot.loop.create_task(self._initialize_status())
 
-    @commands.Cog.listener(name="on_ready")
-    async def _on_ready(self) -> None:
-        """Sets the status when the bot is ready."""
-        activity_type, text = self._get_data_from_file()
-        await self._set_status(activity_type, text)
-
-    @nextcord.slash_command(
-        name="status", description="Change bot status", dm_permission=False
+    @discord.slash_command(
+        name="status",
+        description="Change the bot's status.",
+        dm_permission=False,
     )
     @InteractionUtils.with_info(
-        before="Changing status...",
-        after="Status has been changed to: **{activity_type} *{text}***",
+        before="Setting status: {activity_type} **{text}**...",
+        after="Status has been set to: {activity_type} **{text}**",
         catch_exceptions=[DiscordException],
     )
     @InteractionUtils.with_log()
-    async def _status(
+    async def change_status(
         self,
         interaction: Interaction,  # pylint: disable=unused-argument
         text: str,
         activity_type: str = SlashOption(
-            choices=[
-                ActivityType.playing.name,
-                ActivityType.listening.name,
-                ActivityType.watching.name,
-                ActivityType.streaming.name,
-            ],
+            choices=[at.name.title() for at in ActivityType]
         ),
     ) -> None:
         """Changes the bot's status.
 
         Parameters
         ----------
-        interaction: :class:`Interaction`
+        interaction : :class:`Interaction`
             The interaction that triggered the command.
-        text: :class:`str`
+        text : :class:`str`
             The text to display in the status.
-        activity_type: :class:`str`
-            The type of the activity. Can be one of the following:
-            - playing
-            - listening
-            - watching
-            - streaming
+        activity_type : :class:`str`
+            The type of activity (e.g., playing, listening, watching, streaming).
         """
-        await self._set_status(ActivityType[activity_type], text)
+        await self._set_activity(activity_type, text)
 
-    def _get_data_from_file(self) -> tuple[ActivityType, str]:
-        try:
-            with open(self._STATUS_PATH, "r", encoding="utf-8") as f:
-                lines = list(map(str.strip, f.readlines()))
-            return (ActivityType[lines[0]], lines[1].strip())
-        except (OSError, nextcord.DiscordException, KeyError) as e:
-            Console.warn(
-                "Status could not be loaded. The default status has been set.",
-                exception=e,
-            )
-            return (ActivityType.playing, "zarządzenie serwerem")
+    async def _initialize_status(self) -> None:
+        activity_type, text = self._load_status_from_file()
+        if activity_type and text:
+            await self._set_activity(activity_type, text)
 
-    def _save_data_to_file(self, activity_type: ActivityType, text: str) -> None:
+    def _get_activity(self, activity_type: str, text: str) -> BaseActivity:
+        if activity_type.lower() == "custom":
+            return CustomActivity(name=text)
+        return Activity(type=ActivityType[activity_type.lower()], name=text)
+
+    async def _set_activity(self, activity_type: str, text: str) -> None:
         try:
-            with open(self._STATUS_PATH, "w", encoding="utf-8") as f:
-                f.write(f"{activity_type.name}\n{text}")
+            activity = self._get_activity(activity_type, text)
+            await self.bot.change_presence(activity=activity)
+            self._save_status_to_file(activity_type, text)
+        except (DiscordException, TypeError) as e:
+            Console.error(f"Failed to set bot's status: {e}")
+
+    def _load_status_from_file(self) -> tuple[str | None, str | None]:
+        try:
+            with self.config.data_filepath.open("r", encoding="utf-8") as file:
+                data = json.load(file)
+            return data["activity_type"], data["text"]
+        except (OSError, ValueError) as e:
+            Console.warn(f"Failed to load the status configuration: {e}")
+        return None, None
+
+    def _save_status_to_file(self, activity_type: str, text: str) -> None:
+        """Writes the bot's status to the configuration file."""
+        try:
+            with self.config.data_filepath.open("w", encoding="utf-8") as file:
+                json.dump(
+                    {"activity_type": activity_type, "text": text},
+                    file,
+                    indent=4,
+                    ensure_ascii=False,
+                )
         except OSError as e:
-            Console.error("Error while saving the status.", exception=e)
-
-    async def _set_status(self, activity_type: ActivityType, text: str) -> None:
-        activity = Activity(name=text, type=activity_type)
-        await self._bot.change_presence(activity=activity)
-        self._save_data_to_file(activity_type, text)
+            Console.error(f"Failed to write configuration file: {e}")
 
 
 def setup(bot: UniversityBot):
