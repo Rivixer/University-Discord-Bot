@@ -183,9 +183,14 @@ class UniversityBot(commands.Bot):
             ModuleNotFoundError,
             nextcord.errors.HTTPException,
         ) as e:
+            if isinstance(e, commands.ExtensionError):
+                if isinstance(e.__cause__, ValidationError):
+                    e = e.__cause__
+
             Console.important_error(
                 f"Cog '{display_name or name}' couldn't be loaded!", exception=e
             )
+
             return False
 
     def unload_cog(self, name: str, display_name: str | None) -> bool:
