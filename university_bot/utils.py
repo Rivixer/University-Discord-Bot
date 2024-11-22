@@ -10,6 +10,7 @@ import os
 import re
 import traceback
 from abc import ABC
+from collections.abc import Hashable
 from dataclasses import KW_ONLY, dataclass
 from difflib import SequenceMatcher
 from pathlib import Path
@@ -20,7 +21,6 @@ from typing import (
     Callable,
     Concatenate,
     Generic,
-    Hashable,
     Literal,
     ParamSpec,
     TypeAlias,
@@ -28,7 +28,7 @@ from typing import (
     overload,
 )
 
-from discord import SlashApplicationCommand, TextChannel, Interaction, Member, Thread
+from discord import TextChannel, Interaction, Member, Thread
 import discord
 from discord.ext import commands
 
