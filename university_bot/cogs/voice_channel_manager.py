@@ -16,26 +16,34 @@ from __future__ import annotations
 import asyncio
 import functools
 import random
-from typing import TYPE_CHECKING, Callable, Generator
+from typing import TYPE_CHECKING, Any, Callable, Generator
 
 from discord import (
-    SlashOption,
-    VoiceChannel,
+    CategoryChannel,
     DiscordException,
     Interaction,
+    SlashOption,
+    VoiceChannel,
     slash_command,
-    CategoryChannel,
 )
-from discord.ext import commands
+from nextcord.ext import commands
 from pydantic import BaseModel, Field, ValidationError, model_validator
 
-from university_bot.console import Console
-from university_bot.errors import ExceptionData, NoVoiceConnection
-from university_bot.utils import InteractionUtils, MemberUtils, SlashCommandUtils
+from university_bot import (
+    ExceptionData,
+    InteractionUtils,
+    MemberUtils,
+    NoVoiceConnection,
+    SlashCommandUtils,
+    get_logger,
+)
 
 if TYPE_CHECKING:
     from discord import Guild, Member, VoiceState
+
     from university_bot import UniversityBot
+
+_logger = get_logger(__name__)
 
 
 class Config(BaseModel):
@@ -54,12 +62,12 @@ class Config(BaseModel):
     @property
     def category(self) -> CategoryChannel:
         """The managed category channel."""
+        assert self._category is not None, "Category is not set."
         return self._category
 
     def set_and_validate_category(self, guild: Guild):
         """Sets and validates the `category` field."""
-        category = guild.get_channel(self.managed_category_id)
-        self._validate_category_id(guild)
+        category = self._validate_category_id(guild)
         self._validate_category_permissions(guild, category)
         self._category = category
         return self
@@ -82,7 +90,9 @@ class Config(BaseModel):
 
     @model_validator(mode="before")
     @classmethod
-    def _normalize_channel_order_strategy(cls, values: dict):
+    def _normalize_channel_order_strategy(
+        cls, values: dict[str, Any]
+    ) -> dict[str, Any]:
         if (order := values.get("channel_order_strategy")) and isinstance(order, str):
             values["channel_order_strategy"] = order.lower()
         return values
@@ -137,7 +147,7 @@ class VoiceChannelManager(commands.Cog):
             self.config = Config(**self.bot.config["voice_channel_manager"])
             self.config.set_and_validate_category(bot.guild)
         except (ValidationError, ValueError):
-            Console.error("Voice channel manager config is invalid!")
+            _logger.error("Voice channel manager config is invalid!")
             raise
 
         self.bot.loop.create_task(self.check_voice_channels())
@@ -150,14 +160,14 @@ class VoiceChannelManager(commands.Cog):
         )
 
     def get_empty_channels(self) -> Generator[VoiceChannel, None, None]:
-        """Returns a generator of empty voice channels.
+        """Returns a generator of empty voice channels in the managed category.
 
         Returns
         -------
         :class:`Generator`[:class:`VoiceChannel`, `None`, `None`]
-            A generator of empty voice channels.
+            A generator of empty voice channels in the managed category.
         """
-        return filter(lambda i: not i.members, self.voice_channels)
+        return (i for i in self.voice_channels if not i.members)
 
     def get_voice_channel_with_name(self, name: str) -> VoiceChannel | None:
         """Returns a voice channel with the specified name.
@@ -201,7 +211,7 @@ class VoiceChannelManager(commands.Cog):
         if self.config.ensure_unique_names:
             if self.config.channel_order_strategy == "random":
                 number = random.randint(1, 100)
-            elif self.config.ensure_unique_names == "first available":
+            elif self.config.channel_order_strategy == "first available":
                 number = 1
             else:
                 raise ValueError("Invalid order")
@@ -224,7 +234,7 @@ class VoiceChannelManager(commands.Cog):
             await VoiceChannelUtils.delete(channel)
 
         if not empty_channels:
-            Console.info("No empty channels found.")
+            _logger.info("No empty channels found.")
             category = self.config.category
             name = self.get_next_voice_channel_name()
             channel = await VoiceChannelUtils.create(category, name)
@@ -256,10 +266,10 @@ class Listeners(commands.Cog):
 
         EventLogger.log_user_movement(member, before, after)
 
-        if after.channel:
+        if after.channel and isinstance(after.channel, VoiceChannel):
             await self.handle_channel_join(after.channel)
 
-        if before.channel:
+        if before.channel and isinstance(before.channel, VoiceChannel):
             await self.handle_channel_leave(before.channel)
 
     async def handle_channel_leave(self, channel: VoiceChannel) -> None:
@@ -320,14 +330,20 @@ class Commands(commands.Cog):
         SlashCommandUtils.unregister_disabled_commands(self, config.commands)
 
     @staticmethod
-    def _raise_if_not_in_voice(func: Callable) -> Callable:
+    def _raise_if_not_in_voice(func: Callable[..., Any]) -> Callable[..., Any]:
 
         @functools.wraps(func)
-        async def wrapper(self: Commands, interaction: Interaction, *args, **kwargs):
+        async def wrapper(
+            self: Commands,
+            interaction: Interaction[commands.Bot],
+            *args: Any,
+            **kwargs: Any,
+        ) -> Callable[..., Any]:
+            member: Member = interaction.user  # type: ignore
             if not (
-                (voice := interaction.user.voice)
-                and isinstance(voice.channel, VoiceChannel)
-                and voice.channel.category == self.manager.config.category
+                member.voice
+                and isinstance(member.voice.channel, VoiceChannel)
+                and member.voice.channel.category == self.manager.config.category
             ):
                 raise NoVoiceConnection("You are not connected to a voice channel.")
             return await func(self, interaction, *args, **kwargs)
@@ -358,7 +374,7 @@ class Commands(commands.Cog):
     @_raise_if_not_in_voice
     async def _limit(
         self,
-        interaction: Interaction,
+        interaction: Interaction[commands.Bot],
         limit: int = SlashOption(
             name="new_voice_channel_user_limit",
             min_value=0,
@@ -374,7 +390,8 @@ class Commands(commands.Cog):
         limit: :class:`int`
             The limit to be set.
         """
-        await interaction.user.voice.channel.edit(user_limit=limit)
+        channel: VoiceChannel = interaction.user.voice.channel  # type: ignore
+        await channel.edit(user_limit=limit)
 
     @slash_command(
         name="name",
@@ -405,7 +422,7 @@ class Commands(commands.Cog):
     @_raise_if_not_in_voice
     async def _name(
         self,
-        interaction: Interaction,
+        interaction: Interaction[commands.Bot],
         name: str = SlashOption(
             name="new_voice_channel_name",
             description="The name to be set.",
@@ -421,7 +438,7 @@ class Commands(commands.Cog):
         name: :class:`str`
             The name to be set.
         """
-        channel = interaction.user.voice.channel
+        channel: VoiceChannel = interaction.user.voice.channel  # type: ignore
 
         try:
             await VoiceChannelUtils.change_name(channel, name, timeout=2.5)
@@ -453,14 +470,16 @@ class EventLogger:
 
         display_name = MemberUtils.display_name(member)
         if before.channel and after.channel:
-            Console.info(
-                f"Member `{display_name}` moved from "
-                f"`{before.channel.name}` to `{after.channel.name}`."
+            _logger.info(
+                "Member `%s` moved from `%s` to `%s`.",
+                display_name,
+                before.channel.name,
+                after.channel.name,
             )
         elif before.channel:
-            Console.info(f"Member `{display_name}` left `{before.channel.name}`.")
+            _logger.info("Member `%s` left `%s`.", display_name, before.channel.name)
         elif after.channel:
-            Console.info(f"Member `{display_name}` joined `{after.channel.name}`.")
+            _logger.info("Member `%s` joined `%s`.", display_name, after.channel.name)
 
     @staticmethod
     def log_channel_creation(channel: VoiceChannel) -> None:
@@ -472,7 +491,7 @@ class EventLogger:
             The voice channel that was created.
         """
 
-        Console.info(f"Created voice channel `{channel.name}`.")
+        _logger.info("Created voice channel `%s`.", channel.name)
 
     @staticmethod
     def log_channel_deletion(channel: VoiceChannel) -> None:
@@ -484,7 +503,7 @@ class EventLogger:
             The voice channel that was deleted.
         """
 
-        Console.info(f"Deleted voice channel `{channel.name}`.")
+        _logger.info("Deleted voice channel `%s`.", channel.name)
 
 
 class VoiceChannelUtils:
@@ -508,7 +527,7 @@ class VoiceChannelUtils:
         :class:`Generator`[:class:`VoiceChannel`, `None`, `None`]
             A generator of voice channels filtered by category.
         """
-        return filter(lambda c: c.category == category, channels)
+        return (c for c in channels if c.category == category)
 
     @staticmethod
     def find_channel_by_name(
@@ -533,7 +552,10 @@ class VoiceChannelUtils:
 
     @staticmethod
     async def create(
-        category: CategoryChannel, name: str, timeout: float = 5, **options
+        category: CategoryChannel,
+        name: str,
+        timeout: float = 5,
+        **options: Any,
     ) -> VoiceChannel:
         """|coro|
 
@@ -561,7 +583,7 @@ class VoiceChannelUtils:
                 timeout=timeout,
             )
         except asyncio.TimeoutError:
-            Console.error("Failed to create a new voice channel due to timeout.")
+            _logger.error("Failed to create a new voice channel due to timeout.")
             raise
 
     @staticmethod
@@ -581,7 +603,7 @@ class VoiceChannelUtils:
         try:
             await asyncio.wait_for(channel.delete(), timeout=timeout)
         except asyncio.TimeoutError:
-            Console.error(f"Failed to delete channel {channel.name} due to timeout.")
+            _logger.error("Failed to delete channel %s due to timeout.", channel.name)
             raise
 
     @staticmethod
@@ -600,12 +622,12 @@ class VoiceChannelUtils:
             The timeout for changing the voice channel name.
         """
         try:
-            return await asyncio.wait_for(
+            await asyncio.wait_for(
                 channel.edit(name=name),
                 timeout=timeout,
             )
         except asyncio.TimeoutError:
-            Console.error("Failed to change the voice channel name due to timeout.")
+            _logger.error("Failed to change the voice channel name due to timeout.")
             raise
 
 

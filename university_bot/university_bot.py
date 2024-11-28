@@ -20,19 +20,20 @@ from __future__ import annotations
 
 import logging
 import os
+import sys
 import time
 from typing import Any
 
 import dotenv
 import nextcord
-from pydantic import BaseModel, ValidationError
 import toml
 from nextcord.channel import TextChannel
 from nextcord.ext import commands
 from nextcord.flags import Intents
 from nextcord.guild import Guild
+from pydantic import BaseModel, ValidationError
 
-from university_bot.console import Console
+from university_bot.logger import BasicLoggerConfig, configure_logger
 
 
 class _BasicConfig(BaseModel):
@@ -54,12 +55,14 @@ class UniversityBot(commands.Bot):
     __slots__ = (
         "_basic_config",
         "_config",
+        "_logger",
         "_bot_channel",
         "_guild",
     )
 
     _basic_config: _BasicConfig
-    _config: dict
+    _config: dict[str, Any]
+    _logger: logging.Logger
     _bot_channel: TextChannel
     _guild: Guild
 
@@ -68,13 +71,23 @@ class UniversityBot(commands.Bot):
 
         try:
             self._config = toml.load("config.toml")
-        except (TypeError, IOError) as e:
-            Console.critical_error("Config file is missing or invalid!", exception=e)
+        except (TypeError, IOError):
+            print("Config file is missing or invalid!")
+            raise
+
+        try:
+            basic_logger_config = BasicLoggerConfig(**self._config["logger"])
+        except ValidationError:
+            print("Basic logger config is invalid!")
+            raise
+
+        self._logger = configure_logger(basic_logger_config)
 
         try:
             self._basic_config = _BasicConfig(**self._config["basic"])
         except ValidationError as e:
-            Console.critical_error("Basic config is invalid!", exception=e)
+            self._logger.critical("Basic config is invalid!", exc_info=e)
+            raise
 
         super().__init__(
             intents=Intents.all(),
@@ -114,23 +127,25 @@ class UniversityBot(commands.Bot):
     async def _set_bot_channel(self) -> None:
         channel = self._guild.get_channel(self._basic_config.bot_channel_id)
         if not isinstance(channel, TextChannel):
-            Console.critical_error("Bot channel not found!")
+            self._logger.critical("Bot channel not found!")
+            sys.exit(1)
         self._bot_channel = channel
         setattr(self, "bot_channel", channel)
-        logging.debug("Set bot channel to bot instance")
+        self._logger.debug("Set bot channel to bot instance")
 
     async def _set_guild(self) -> None:
         if (guild := self.get_guild(self._basic_config.guild_id)) is None:
-            Console.critical_error("Guild not found!")
+            self._logger.critical("Guild not found!")
+            sys.exit(1)
         self._guild = guild
         setattr(self, "guild", guild)
-        logging.debug("Set guild to bot instance")
+        self._logger.debug("Set guild to bot instance")
 
     async def _load_cogs(self) -> None:
         if self._cogs_loaded:
             return
 
-        logging.info("Loading cogs...")
+        self._logger.info("Loading cogs...")
 
         for cog_filename in os.listdir("university_bot/cogs"):
             if not cog_filename.endswith(".py"):
@@ -140,13 +155,15 @@ class UniversityBot(commands.Bot):
             cog_config = self.config.get(cog_name)
 
             if cog_config is None:
-                Console.warn(f"Config for `{cog_name}` cog is missing, skipping...")
+                self._logger.warning(
+                    "Config for '%s' cog is missing, skipping...", cog_name
+                )
                 continue
 
             if (is_enabled := cog_config.get("is_enabled")) is None:
-                Console.warn(
-                    f"`is_enabled` key for `{cog_name}` cog is missing, "
-                    "loading anyway..."
+                self._logger.warning(
+                    "`is_enabled` key for `%s` cog is missing, loading anyway...",
+                    cog_name,
                 )
 
             if is_enabled:
@@ -174,8 +191,8 @@ class UniversityBot(commands.Bot):
         try:
             self.load_extension(name)
             load_time = (time.time() - start_time) * 1000
-            Console.info(
-                f"Cog '{display_name or name}' has been loaded! ({load_time:.2f}ms)"
+            self._logger.info(
+                "Cog '%s' has been loaded! (%.2fms)", display_name or name, load_time
             )
             return True
         except (
@@ -187,13 +204,13 @@ class UniversityBot(commands.Bot):
                 if isinstance(e.__cause__, ValidationError):
                     e = e.__cause__
 
-            Console.important_error(
-                f"Cog '{display_name or name}' couldn't be loaded!", exception=e
+            self._logger.error(
+                "Cog '%s' couldn't be loaded!", display_name or name, exc_info=e
             )
 
             return False
 
-    def unload_cog(self, name: str, display_name: str | None) -> bool:
+    def unload_cog(self, name: str, display_name: str | None = None) -> bool:
         """Unloads the cog.
 
         Parameters
@@ -214,8 +231,8 @@ class UniversityBot(commands.Bot):
         try:
             self.unload_extension(name)
             load_time = (time.time() - start_time) * 1000
-            Console.info(
-                f"Cog '{display_name or name}' has been unloaded! ({load_time:.2f}ms)"
+            self._logger.info(
+                "Cog '%s' has been unloaded! (%.2fms)", display_name or name, load_time
             )
             return True
         except (
@@ -223,8 +240,8 @@ class UniversityBot(commands.Bot):
             ModuleNotFoundError,
             nextcord.errors.HTTPException,
         ) as e:
-            Console.important_error(
-                f"Cog '{display_name or name}' couldn't be unloaded!", exception=e
+            self._logger.error(
+                "Cog '%s' couldn't be unloaded!", display_name or name, exc_info=e
             )
             return False
 
@@ -246,16 +263,16 @@ class UniversityBot(commands.Bot):
         try:
             self.reload_extension(cog_name)
             load_time = (time.time() - start_time) * 1000
-            Console.info(f"Cog '{cog_name}' has been reloaded! ({load_time:.2f}ms)")
+            self._logger.info(
+                "Cog '%s' has been reloaded! (%.2fms)", cog_name, load_time
+            )
             return True
         except (
             commands.ExtensionError,
             ModuleNotFoundError,
             nextcord.errors.HTTPException,
         ) as e:
-            Console.important_error(
-                f"Cog '{cog_name}' couldn't be reloaded!", exception=e
-            )
+            self._logger.error("Cog '%s' couldn't be reloaded!", cog_name, exc_info=e)
             return False
 
     def main(self) -> None:
