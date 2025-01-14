@@ -48,7 +48,6 @@ class InformationCog(commands.Cog):
     @nextcord.slash_command(
         name="information",
         description="The information embed.",
-        dm_permission=False,
     )
     async def _information(self, *_) -> None:
         """The information embed.

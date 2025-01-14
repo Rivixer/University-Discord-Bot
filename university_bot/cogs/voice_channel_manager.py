@@ -18,7 +18,7 @@ import functools
 import random
 from typing import TYPE_CHECKING, Any, Callable, Generator
 
-from discord import (
+from nextcord import (
     CategoryChannel,
     DiscordException,
     Interaction,
@@ -39,7 +39,7 @@ from university_bot import (
 )
 
 if TYPE_CHECKING:
-    from discord import Guild, Member, VoiceState
+    from nextcord import Guild, Member, VoiceState
 
     from university_bot import UniversityBot
 
@@ -49,7 +49,7 @@ _logger = get_logger(__name__)
 class Config(BaseModel):
     """The voice channel manager config."""
 
-    is_enabled: bool
+    enable: bool
     managed_category_id: int
     channel_order_strategy: str = Field(..., pattern=r"(?i)^(random|first available)$")
     ensure_unique_names: bool
@@ -353,7 +353,6 @@ class Commands(commands.Cog):
     @slash_command(
         name="limit",
         description="Set the limit of the voice channel you are in.",
-        dm_permission=False,
     )
     @InteractionUtils.with_info(
         before="**Setting the limit to `{limit}`...**",
@@ -396,7 +395,6 @@ class Commands(commands.Cog):
     @slash_command(
         name="name",
         description="Set the name of the voice channel you are in.",
-        dm_permission=False,
     )
     @InteractionUtils.with_info(
         before="**Setting the voice channel name to `{name}`...**",

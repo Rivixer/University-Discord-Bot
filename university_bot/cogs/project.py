@@ -29,6 +29,7 @@ from university_bot.utils import InteractionUtils, ProjectUtils
 
 if TYPE_CHECKING:
     from nextcord.embeds import Embed
+
     from university_bot import UniversityBot
 
 
@@ -54,7 +55,6 @@ class ProjectCog(commands.Cog):
     @nextcord.slash_command(
         name="project",
         description="The project embed.",
-        dm_permission=False,
     )
     async def _project(self, *_) -> None:
         """The project embed.

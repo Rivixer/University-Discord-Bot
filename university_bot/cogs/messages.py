@@ -8,6 +8,7 @@ import json
 from typing import TYPE_CHECKING, Any, Optional
 
 import nextcord
+from nextcord import ButtonStyle
 from nextcord.application_command import SlashOption
 from nextcord.channel import TextChannel
 from nextcord.embeds import Embed
@@ -68,7 +69,6 @@ class MessagingCog(commands.Cog):
     @nextcord.slash_command(
         name="message",
         description="Manage bot messages.",
-        dm_permission=False,
     )
     async def _message(self, *_) -> None:
         """A command to manage bot messages.

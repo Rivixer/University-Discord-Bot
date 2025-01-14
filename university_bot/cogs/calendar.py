@@ -55,6 +55,7 @@ from university_bot.utils import (
 if TYPE_CHECKING:
     from nextcord.guild import Guild
     from nextcord.message import PartialMessage
+
     from university_bot import UniversityBot
 
 
@@ -91,7 +92,6 @@ class CalendarCog(commands.Cog):
     @nextcord.slash_command(
         name="calendar",
         description="The calendar embed.",
-        dm_permission=False,
     )
     async def _calendar(self, *_) -> None:
         """The calendar embed.

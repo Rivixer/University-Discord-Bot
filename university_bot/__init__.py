@@ -1,9 +1,9 @@
 """
-SGGW-inf-bot-discord
+University Discord Bot
 --------------------
 
-A Discord bot created to manage the Discord server for computer
-science students at the Warsaw University of Life Sciences.
+A Discord bot created to support students
+in organizing their university lifes.
 
 Features
 --------
@@ -16,10 +16,10 @@ Features
 - custom plugins
 """
 
-__title__ = "SGGW-inf-bot-discord"
+__title__ = "University-Discord-Bot"
 __author__ = "Wiktor Jaworski"
 __license__ = "MIT"
-__copyright__ = "Copyright 2023, 2024 Wiktor Jaworski"
+__copyright__ = "Copyright 2023-2025 Wiktor Jaworski"
 __version__ = "0.9.2"
 
 from . import console, errors, utils

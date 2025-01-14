@@ -48,9 +48,9 @@ NOTES
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass, field
 from enum import Enum, auto
-import json
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, ClassVar
 
@@ -132,7 +132,6 @@ class PluginsCog(commands.Cog):
     @nextcord.slash_command(
         name="plugins",
         description="The plugins.",
-        dm_permission=False,
     )
     async def _plugins(self, *_) -> None:
         """The placeholder for the plugins command."""

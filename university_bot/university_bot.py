@@ -160,13 +160,13 @@ class UniversityBot(commands.Bot):
                 )
                 continue
 
-            if (is_enabled := cog_config.get("is_enabled")) is None:
+            if (enable := cog_config.get("enable")) is None:
                 self._logger.warning(
-                    "`is_enabled` key for `%s` cog is missing, loading anyway...",
+                    "`enable` key for `%s` cog is missing, loading anyway...",
                     cog_name,
                 )
 
-            if is_enabled:
+            if enable:
                 self.load_cog(f"university_bot.cogs.{cog_name}", cog_name)
 
         logging.info("Cogs loaded")

@@ -3,7 +3,7 @@
 This is a Discord Bot created to manage server for computer science students of the Faculty of Applied Informatics
 and Mathematics at the Warsaw University of Life Sciences (2021/2025).
 
-Python version: 3.10.X
+Python version: 3.12
 
 ## How to configure the bot?
 

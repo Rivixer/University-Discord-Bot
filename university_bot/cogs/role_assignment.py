@@ -27,24 +27,31 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Awaitable, Callable, Concatenate, ParamSpec
 
 import nextcord
-from nextcord.application_command import SlashOption
-from nextcord.channel import TextChannel
-from nextcord.embeds import Embed
-from nextcord.emoji import Emoji
-from nextcord.errors import DiscordException
-from nextcord.ext import commands, tasks
-from nextcord.interactions import Interaction
-from nextcord.message import Attachment
+from nextcord import (
+    Attachment,
+    Colour,
+    DiscordException,
+    Embed,
+    File,
+    Interaction,
+    SlashOption,
+    TextChannel,
+)
+from nextcord.ext import commands
+from pydantic import BaseModel, ConfigDict, field_validator
 
-from university_bot.errors import UpdateEmbedError
-from university_bot.models import ControllerWithEmbed, EmbedModel, Model
 from university_bot.utils import Console, FontColour, InteractionUtils
 
 if TYPE_CHECKING:
-    from nextcord.member import Member
-    from nextcord.partial_emoji import PartialEmoji
-    from nextcord.raw_models import RawReactionActionEvent
-    from nextcord.role import Role
+    from nextcord import (
+        Guild,
+        Member,
+        Message,
+        PartialEmoji,
+        PartialMessage,
+        RawReactionActionEvent,
+        Role,
+    )
 
     from university_bot import UniversityBot
 
@@ -89,7 +96,6 @@ class RoleAssignment(commands.Cog):
     @nextcord.slash_command(
         name="role_assignment",
         description="The role_assignment embed.",
-        dm_permission=False,
     )
     async def _role_assignment(self, *_) -> None:
         """The role_assignment embed.

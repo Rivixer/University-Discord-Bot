@@ -2,12 +2,12 @@
 """A module to control the bot's status.
 
 This module contains a cog to control the bot's status. The bot's status can be
-changed using the `/status` command. The status is saved to a JSON file so that
+changed using the `/status set` command. The status is saved to a JSON file so that
 it can be restored when the bot restarts. The status can be set to one of the
 following types: playing, listening, watching, streaming, competing, custom or unknown.
 
 Setting the status to "custom" will display the text as the status. The status
-can be reset by setting the type to "unknown".
+can be reset by using the `/status clear` command.
 """
 
 from __future__ import annotations
@@ -17,23 +17,24 @@ import os
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-import discord
-from discord import (
-    CustomActivity,
-    ActivityType,
+import nextcord
+from nextcord import (
     Activity,
-    SlashOption,
+    ActivityType,
+    CustomActivity,
     DiscordException,
     Interaction,
+    SlashOption,
 )
-from discord.ext import commands
+from nextcord.ext import commands
 from pydantic import BaseModel, field_validator
 
 from university_bot.console import Console
 from university_bot.utils import InteractionUtils
 
 if TYPE_CHECKING:
-    from discord import BaseActivity
+    from nextcord import BaseActivity
+
     from university_bot import UniversityBot
 
 
@@ -78,10 +79,18 @@ class StatusCog(commands.Cog):
         self.config = Config(data_filepath=bot.config["status"]["data_filepath"])
         self.bot.loop.create_task(self._initialize_status())
 
-    @discord.slash_command(
+    @nextcord.slash_command(
         name="status",
+    )
+    async def _status(self, interaction: Interaction[commands.Bot]) -> None:
+        """The status command.
+
+        This command is a placeholder for the subcommands.
+        """
+
+    @_status.subcommand(
+        name="set",
         description="Change the bot's status.",
-        dm_permission=False,
     )
     @InteractionUtils.with_info(
         before="Setting status: {activity_type} **{text}**...",
@@ -89,12 +98,19 @@ class StatusCog(commands.Cog):
         catch_exceptions=[DiscordException],
     )
     @InteractionUtils.with_log()
-    async def change_status(
+    async def _status_set(
         self,
-        interaction: Interaction,  # pylint: disable=unused-argument
-        text: str,
+        interaction: Interaction[commands.Bot],  # pylint: disable=unused-argument
         activity_type: str = SlashOption(
-            choices=[at.name.title() for at in ActivityType]
+            choices=[
+                at.name.title() for at in ActivityType if at != ActivityType.unknown
+            ],
+            description="The type of activity.",
+            required=True,
+        ),
+        text: str = SlashOption(
+            description="The text to display in the status.",
+            required=True,
         ),
     ) -> None:
         """Changes the bot's status.
@@ -106,9 +122,32 @@ class StatusCog(commands.Cog):
         text : :class:`str`
             The text to display in the status.
         activity_type : :class:`str`
-            The type of activity (e.g., playing, listening, watching, streaming).
+            The type of activity.
         """
         await self._set_activity(activity_type, text)
+
+    @_status.subcommand(
+        name="clear",
+        description="Clear the bot's status.",
+    )
+    @InteractionUtils.with_info(
+        before="Clearing the bot's status...",
+        after="The bot's status has been cleared.",
+        catch_exceptions=[DiscordException],
+    )
+    @InteractionUtils.with_log()
+    async def change_status(
+        self,
+        interaction: Interaction[commands.Bot],  # pylint: disable=unused-argument
+    ) -> None:
+        """Cleares the bot's status.
+
+        Parameters
+        ----------
+        interaction : :class:`Interaction`
+            The interaction that triggered the command.
+        """
+        await self._set_activity("unknown", "")
 
     async def _initialize_status(self) -> None:
         activity_type, text = self._load_status_from_file()

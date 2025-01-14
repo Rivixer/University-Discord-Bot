@@ -28,9 +28,8 @@ from typing import (
     overload,
 )
 
-from discord import TextChannel, Interaction, Member, Thread
-import discord
-from discord.ext import commands
+import nextcord
+from nextcord import Interaction, Member, TextChannel, Thread
 
 from university_bot.console import Console, FontColour
 from university_bot.errors import ExceptionData
@@ -209,7 +208,7 @@ class InteractionUtils(ABC):
                         try:
                             msg = await interaction.original_message()
                             await msg.edit(content=err_msg)
-                        except discord.errors.NotFound:
+                        except nextcord.errors.NotFound:
                             await interaction.send(err_msg, ephemeral=True)
 
                     comm_name = InteractionUtils._command_name(interaction)
