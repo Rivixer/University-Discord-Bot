@@ -105,7 +105,7 @@ def configure_logger(config: BasicLoggerConfig) -> logging.Logger:
 
     log_filename = datetime.now().strftime(config.filename_format)
     log_file = config.directory / Path(log_filename)
-    file_handler = logging.FileHandler(log_file)
+    file_handler = logging.FileHandler(log_file, encoding="utf-8")
     file_handler.setFormatter(file_formatter)
     root_logger.addHandler(file_handler)
 
