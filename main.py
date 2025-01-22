@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: MIT
 """Main module for University Bot."""
 
-from university_bot import UniversityBot
+from university_bot.bot import UniversityBot
 
 
 def main() -> None:

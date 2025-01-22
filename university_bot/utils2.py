@@ -13,32 +13,48 @@ from abc import ABC
 from collections.abc import Hashable
 from dataclasses import KW_ONLY, dataclass
 from difflib import SequenceMatcher
+from functools import wraps
 from pathlib import Path
 from typing import (
     TYPE_CHECKING,
     Any,
     Awaitable,
     Callable,
-    Concatenate,
     Generic,
     Literal,
-    ParamSpec,
     TypeAlias,
     TypeVar,
     overload,
 )
 
 import nextcord
-from nextcord import Interaction, Member, TextChannel, Thread
+from nextcord import HTTPException, Member, TextChannel, Thread
+from nextcord.abc import Messageable
+from pydantic import BaseModel
 
 from university_bot.console import Console, FontColour
 from university_bot.errors import ExceptionData
 
 if TYPE_CHECKING:
-    from nextcord.user import User
+    from nextcord import User
+    from nextcord.ext.commands import Cog
 
-    _P = ParamSpec("_P")
-    _FUNC = Callable[Concatenate[Any, Interaction, _P], Awaitable[Any]]
+    from university_bot import Interaction
+
+__all__ = (
+    "InteractionUtils",
+    "ConfigUtils",
+    "PathUtils",
+    "SlashCommandUtils",
+    "MemberUtils",
+    "ProjectUtils",
+    "Matcher",
+    "SmartDict",
+    "wait_until_midnight",
+)
+
+
+# TODO: Check all docstrings for correctness.
 
 
 class InteractionUtils(ABC):
@@ -56,9 +72,33 @@ class InteractionUtils(ABC):
         return command.qualified_name
 
     @staticmethod
+    def ensure_messageable_channel(interaction: Interaction) -> Messageable:
+        """Ensures that the interaction is in a messageable channel.
+
+        Parameters
+        ----------
+        interaction: :class:`Interaction`
+            The interaction to check.
+
+        Returns
+        -------
+        :class:`Messageable`
+            The messageable channel.
+
+        Raises
+        ------
+        TypeError
+            If the interaction is not in a messageable channel.
+        """
+        channel = interaction.channel
+        if not isinstance(channel, Messageable):
+            raise TypeError("Channel is not messageable.")
+        return channel
+
+    @staticmethod
     def with_log(
         colour: FontColour = FontColour.PINK, show_channel: bool = False
-    ) -> Callable[[_FUNC], _FUNC]:
+    ) -> Callable[..., Any]:
         """Logs information about the user who ran a decorated command to the console.
 
         This decorator should be placed after decorators that set a function as a command.
@@ -75,13 +115,13 @@ class InteractionUtils(ABC):
             Whether to show the channel name in the log message.
         """
 
-        def decorator(func: _FUNC) -> _FUNC:
+        def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
             @functools.wraps(func)
             async def wrapper(
-                self,
+                self: Cog,
                 interaction: Interaction,
-                *args: _P.args,
-                **kwargs: _P.kwargs,
+                *args: Any,
+                **kwargs: Any,
             ) -> Awaitable[Any]:
                 type_info = "SLASH_COMMAND"
                 command_name = InteractionUtils._command_name(interaction)
@@ -99,7 +139,7 @@ class InteractionUtils(ABC):
                         type_info += f"/{channel.name}"
                     if isinstance(channel, Thread):
                         if parent := channel.parent:
-                            type_info += f"/{parent.name}/{channel.name}"
+                            type_info += f"/{parent.name}/{channel.name}"  # type: ignore
 
                 Console.specific(
                     f"{user_info} used /{command_name} {kwargs_info}",
@@ -118,8 +158,10 @@ class InteractionUtils(ABC):
         *,
         before: str | None = None,
         after: str | None = None,
-        catch_exceptions: list[type[Exception] | ExceptionData] | None = None,
-    ) -> Callable[[_FUNC], _FUNC]:
+        catch_exceptions: (  # pylint: disable=redefined-outer-name
+            list[type[Exception] | ExceptionData] | None
+        ) = None,
+    ) -> Callable[..., Any]:
         """Responds to the interaction an ephemeral message to the user who ran a decorated command.
 
         This decorator should be placed after decorators that set a function as a command.
@@ -184,13 +226,13 @@ class InteractionUtils(ABC):
             If the command is not a slash command.
         """
 
-        def decorator(func: _FUNC) -> _FUNC:
+        def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
             @functools.wraps(func)
             async def wrapper(
-                self,
+                self: Cog,
                 interaction: Interaction,
-                *args: _P.args,
-                **kwargs: _P.kwargs,
+                *args: Any,
+                **kwargs: Any,
             ) -> Awaitable[Any] | None:
                 async def catch_error(exc: Exception, exc_data: ExceptionData) -> None:
                     err_msg = f"**[ERROR]** {exc}"
@@ -252,6 +294,113 @@ class InteractionUtils(ABC):
         return decorator
 
 
+class ConfigUtils(ABC):
+    """A class containing utility methods for configuration files."""
+
+    @staticmethod
+    def validate_data_filepath(path: Path, extension: str) -> None:
+        """Validates the data file path.
+
+        Parameters
+        ----------
+        path: :class:`Path`
+            The path to validate.
+        extension: :class:`str`
+            The extension of the file including the dot (e.g. '.json').
+
+        Raises
+        ------
+        ValueError
+            - If the path is not a file with the given extension.
+            - If the parent directory does not exist.
+            - If the parent directory is not writable.
+            - If the directory or file is ambiguously named with the extension.
+        """
+
+        if path.name == extension:
+            raise ValueError(
+                "The path cannot point to a directory "
+                f"or a file ambiguously named {extension}."
+            )
+
+        if (suffix := path.suffix) != extension:
+            raise ValueError(
+                f"The file must have a {extension} extension. Found: {suffix}"
+            )
+
+        if not path.parent.exists():
+            raise ValueError(f"The parent directory {path.parent} does not exist.")
+
+        if not os.access(path.parent, os.W_OK):
+            raise ValueError(f"The parent directory {path.parent} is not writable.")
+
+    @staticmethod
+    def validate_data_directory(path: Path) -> None:
+        """Validates the data directory path.
+
+        Parameters
+        ----------
+        path: :class:`Path`
+            The path to validate.
+
+        Raises
+        ------
+        ValueError
+            - If the parent directory does not exist.
+            - If the path is not a directory.
+            - If the parent directory is not writable.
+        """
+
+        if not path.parent.exists():
+            raise ValueError(f"The parent directory {path.parent} does not exist.")
+
+        if path.exists() and not path.is_dir():
+            raise ValueError(f"The path {path} is not a directory.")
+
+        if not os.access(path.parent, os.W_OK):
+            raise ValueError(f"The parent directory {path.parent} is not writable.")
+
+    @staticmethod
+    def auto_model_dump[T: BaseModel](class_: type[T]) -> type[T]:
+        """Decorator to enhance a BaseModel with automatic nested model_dump.
+
+        This decorator enhances a BaseModel class by automatically calling the model_dump method
+        of nested BaseModels. This is useful when you want to serialize a BaseModel instance
+        to a dictionary and you have nested BaseModels.
+
+        Parameters
+        ----------
+        class_: type[T]
+            The BaseModel class to enhance.
+
+        Returns
+        -------
+        type[T]
+            The enhanced BaseModel class.
+        """
+        original_model_dump: Callable[..., dict[str, Any]] = class_.model_dump
+
+        @wraps(original_model_dump)
+        def enhanced_model_dump(self: T, **kwargs: Any) -> dict[str, Any]:
+            def process_value(value: Any) -> Any:
+                """Recursively process BaseModel instances and collections."""
+                if isinstance(value, BaseModel):
+                    return value.model_dump(**kwargs)
+                if isinstance(value, list):
+                    return [process_value(item) for item in value]  # type: ignore
+                if isinstance(value, dict):
+                    return {k: process_value(v) for k, v in value.items()}  # type: ignore
+                if hasattr(value, "to_dict") and callable(getattr(value, "to_dict")):
+                    return value.to_dict()
+                return value
+
+            data = original_model_dump(self, **kwargs)
+            return {key: process_value(value) for key, value in data.items()}
+
+        class_.model_dump = enhanced_model_dump
+        return class_
+
+
 class PathUtils(ABC):  # pylint: disable=too-few-public-methods
     """A class containing utility methods for paths."""
 
@@ -297,8 +446,8 @@ class SlashCommandUtils(ABC):  # pylint: disable=too-few-public-methods
 
     @staticmethod
     def unregister_disabled_commands(
-        cog: commands.Cog,
-        commands_config: dict[str, bool],
+        cog: Cog,
+        commands_config: Any,
     ) -> None:
         """Unregisters slash commands that are disabled in the config.
 
@@ -310,7 +459,11 @@ class SlashCommandUtils(ABC):  # pylint: disable=too-few-public-methods
             A mapping of command names to their enabled/disabled status.
         """
         mapping = {cmd.name: cmd for cmd in cog.application_commands}
-        config = {name: getattr(commands_config, name, True) for name in mapping.keys()}
+        config: dict[str | None, bool] = {
+            name: getattr(commands_config, name, True)
+            for name in mapping.keys()
+            if name is not None
+        }
 
         for name, command in mapping.items():
             if not config.get(name, True) and command in cog.application_commands:
@@ -609,9 +762,9 @@ class SmartDict(dict[_KeyT, _RatioT]):
         smart_dict[1]  # 3.0 (3.0 was set because 3.0 > 2.0)
     """
 
-    compare_method: _CompareMethod
+    compare_method: _CompareMethod[_RatioT]
 
-    def __init__(self, compare_method: _CompareMethod) -> None:
+    def __init__(self, compare_method: _CompareMethod[_RatioT]) -> None:
         self.compare_method = compare_method
 
     def __setitem__(self, key: _KeyT, value: _RatioT) -> None:

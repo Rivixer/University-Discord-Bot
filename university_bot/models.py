@@ -36,13 +36,13 @@ from nextcord.errors import DiscordException
 
 from .console import Console
 from .errors import UpdateEmbedError
-from .utils import PathUtils
+from .utils2 import PathUtils
 
 if TYPE_CHECKING:
     from nextcord.emoji import Emoji
     from nextcord.message import Attachment, Message
 
-    from .university_bot import UniversityBot
+    from .bot import UniversityBot
 
 
 class Model(ABC):

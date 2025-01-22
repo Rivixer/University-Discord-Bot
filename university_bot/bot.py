@@ -4,16 +4,17 @@
 The :class:`UniversityBot` class is used to initialize the bot.
 
 Examples
--------- ::
+--------
+```python
+from university_bot import UniversityBot
 
-    from university_bot import UniversityBot
+class Cog(commands.Cog):
+    def __init__(self, bot: UniversityBot) -> None:
+        self.bot = bot
 
-    class Cog(commands.Cog):
-        def __init__(self, bot: UniversityBot) -> None:
-            self.bot = bot
-
-    def setup(bot: UniversityBot) -> None:
-        bot.add_cog(Cog(bot))
+def setup(bot: UniversityBot) -> None:
+    bot.add_cog(Cog(bot))
+    ```
 """
 
 from __future__ import annotations
@@ -22,76 +23,73 @@ import logging
 import os
 import sys
 import time
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import dotenv
 import nextcord
-import toml
-from nextcord.channel import TextChannel
-from nextcord.ext import commands
+from nextcord import TextChannel
+from nextcord.ext.commands import Bot, ExtensionError
 from nextcord.flags import Intents
 from nextcord.guild import Guild
-from pydantic import BaseModel, ValidationError
+from pydantic_core import ValidationError
 
-from university_bot.logger import BasicLoggerConfig, configure_logger
+from university_bot.utils.config_loader import ConfigLoader
+
+from .models.configs import BasicConfig, LoggerConfig, TemporaryFilesConfig
+from .utils.logger import configure_logger
+
+if TYPE_CHECKING:
+    from .utils.config_loader import ImmutableConfig
+
+__all__ = ("UniversityBot",)
 
 
-class _BasicConfig(BaseModel):
-    """A class for the basic configuration of the bot."""
-
-    guild_id: int
-    admin_role_id: int
-    bot_channel_id: int
-
-
-class UniversityBot(commands.Bot):
-    """:class:`commands.Bot` but with custom commands added.
+class UniversityBot(Bot):
+    """:class:`commands.Bot` but with custom attributes added.
 
     Can be used as an alias in the cog class,
     because Discord API sends the :class:`commands.Bot`
     parameter in :func:`setup` in the cog's file.
     """
 
-    __slots__ = (
-        "_basic_config",
-        "_config",
-        "_logger",
-        "_bot_channel",
-        "_guild",
-    )
-
-    _basic_config: _BasicConfig
-    _config: dict[str, Any]
+    _basic_config: BasicConfig
+    _config: ImmutableConfig
     _logger: logging.Logger
     _bot_channel: TextChannel
     _guild: Guild
+    _cogs_loaded: bool
 
     def __init__(self) -> None:
         self._cogs_loaded = False
 
         try:
-            self._config = toml.load("config.toml")
+            config_loader = ConfigLoader("config.toml")
+            self._config = config_loader.load_config()
         except (TypeError, IOError):
-            print("Config file is missing or invalid!")
-            raise
+            logging.critical("Config file is missing or invalid!", exc_info=True)
+            sys.exit(1)
 
         try:
-            basic_logger_config = BasicLoggerConfig(**self._config["logger"])
+            logger_config = LoggerConfig(**self._config["basic"]["logger"])
         except ValidationError:
-            print("Basic logger config is invalid!")
+            logging.critical("Basic logger config is invalid!", exc_info=True)
             raise
 
-        self._logger = configure_logger(basic_logger_config)
+        self._logger = configure_logger(logger_config)
 
         try:
-            self._basic_config = _BasicConfig(**self._config["basic"])
-        except ValidationError as e:
-            self._logger.critical("Basic config is invalid!", exc_info=e)
+            self._basic_config = BasicConfig(**self._config["basic"])
+        except ValidationError:
+            self._logger.critical("Basic config is invalid!")
             raise
+
+        if self.temporary_files_config.clear_on_startup:
+            self.temporary_files_config.clear()
 
         super().__init__(
             intents=Intents.all(),
             case_insensitive=True,
+            default_guild_ids=[self._basic_config.guild_id],
         )
 
     async def on_connect(self) -> None:
@@ -102,9 +100,14 @@ class UniversityBot(commands.Bot):
         await self.sync_all_application_commands()
 
     @property
-    def config(self) -> dict[str, Any]:
+    def config(self) -> ImmutableConfig:
         """Returns the bot configuration from the `config.toml` file."""
         return self._config
+
+    @property
+    def temporary_files_config(self) -> TemporaryFilesConfig:
+        """Returns the temporary files configuration."""
+        return self._basic_config.temporary_files
 
     @property
     def guild(self) -> Guild:
@@ -125,30 +128,44 @@ class UniversityBot(commands.Bot):
         self._bot_channel = channel
 
     async def _set_bot_channel(self) -> None:
-        channel = self._guild.get_channel(self._basic_config.bot_channel_id)
+        channel_id = self._basic_config.bot_channel_id
+        channel = self._guild.get_channel(channel_id)
+
         if not isinstance(channel, TextChannel):
-            self._logger.critical("Bot channel not found!")
+            self._logger.critical(
+                "Bot channel (id=%s) not found!",
+                channel_id,
+                exc_info=True,
+            )
             sys.exit(1)
+
         self._bot_channel = channel
         setattr(self, "bot_channel", channel)
+
         self._logger.debug("Set bot channel to bot instance")
 
     async def _set_guild(self) -> None:
-        if (guild := self.get_guild(self._basic_config.guild_id)) is None:
-            self._logger.critical("Guild not found!")
+        guild_id = self._basic_config.guild_id
+        if (guild := self.get_guild(guild_id)) is None:
+            self._logger.critical("Guild %s not found!", guild_id)
             sys.exit(1)
+
         self._guild = guild
         setattr(self, "guild", guild)
+
         self._logger.debug("Set guild to bot instance")
 
     async def _load_cogs(self) -> None:
         if self._cogs_loaded:
             return
 
-        self._logger.info("Loading cogs...")
+        self._logger.info("Loading cogs.")
 
         for cog_filename in os.listdir("university_bot/cogs"):
             if not cog_filename.endswith(".py"):
+                continue
+
+            if cog_filename == "__init__.py":
                 continue
 
             cog_name = cog_filename[:-3]
@@ -156,20 +173,20 @@ class UniversityBot(commands.Bot):
 
             if cog_config is None:
                 self._logger.warning(
-                    "Config for '%s' cog is missing, skipping...", cog_name
+                    "Config for '%s' cog is missing, skipping.", cog_name
                 )
                 continue
 
-            if (enable := cog_config.get("enable")) is None:
+            if (enabled := cog_config.get("enabled")) is None:
                 self._logger.warning(
-                    "`enable` key for `%s` cog is missing, loading anyway...",
+                    "`enabled` key for `%s` cog is missing, loading anyway.",
                     cog_name,
                 )
 
-            if enable:
+            if enabled:
                 self.load_cog(f"university_bot.cogs.{cog_name}", cog_name)
 
-        logging.info("Cogs loaded")
+        logging.info("Cogs loaded.")
         self._cogs_loaded = True
 
     def load_cog(self, name: str, display_name: str | None = None) -> bool:
@@ -196,16 +213,19 @@ class UniversityBot(commands.Bot):
             )
             return True
         except (
-            commands.ExtensionError,
+            ExtensionError,
             ModuleNotFoundError,
             nextcord.errors.HTTPException,
         ) as e:
-            if isinstance(e, commands.ExtensionError):
+            if isinstance(e, ExtensionError):
                 if isinstance(e.__cause__, ValidationError):
                     e = e.__cause__
 
             self._logger.error(
-                "Cog '%s' couldn't be loaded!", display_name or name, exc_info=e
+                "Cog '%s' couldn't be loaded! %s",
+                display_name or name,
+                e.__cause__ if isinstance(e, ExtensionError) else e,
+                exc_info=True,
             )
 
             return False
@@ -236,12 +256,15 @@ class UniversityBot(commands.Bot):
             )
             return True
         except (
-            commands.ExtensionError,
+            ExtensionError,
             ModuleNotFoundError,
             nextcord.errors.HTTPException,
         ) as e:
             self._logger.error(
-                "Cog '%s' couldn't be unloaded!", display_name or name, exc_info=e
+                "Cog '%s' couldn't be unloaded! %s",
+                display_name or name,
+                e.__cause__ if isinstance(e, ExtensionError) else e,
+                exc_info=True,
             )
             return False
 
@@ -268,15 +291,30 @@ class UniversityBot(commands.Bot):
             )
             return True
         except (
-            commands.ExtensionError,
+            ExtensionError,
             ModuleNotFoundError,
             nextcord.errors.HTTPException,
         ) as e:
-            self._logger.error("Cog '%s' couldn't be reloaded!", cog_name, exc_info=e)
+            self._logger.error(
+                "Cog '%s' couldn't be reloaded! %s",
+                cog_name,
+                e.__cause__ if isinstance(e, ExtensionError) else e,
+                exc_info=True,
+            )
             return False
 
     def main(self) -> None:
         """Runs the bot using `BOT_TOKEN` received from `.env` file."""
         dotenv.load_dotenv()
         token = os.environ.get("BOT_TOKEN")
-        self.run(token)
+
+        if token is None:
+            self._logger.critical("BOT_TOKEN in .env file is missing!")
+            sys.exit(1)
+
+        try:
+            self.run(token)
+        finally:
+            if self.temporary_files_config.clear_on_shutdown:
+                self.temporary_files_config.clear()
+            self._logger.info("Bot has been stopped!")

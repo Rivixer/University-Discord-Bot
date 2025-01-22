@@ -128,12 +128,18 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-data/embeds/
-data/settings/
-data/registration/*.json
-data/status.txt
+# Data
+config.toml
+data/*
+!data/registraion/email.html
 
+# Logs
 logs/
+
+# Temp
+.temp/
+
+# Misc
 old_settings/
 old_files/
 settings.json

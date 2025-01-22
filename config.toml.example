@@ -1,0 +1,43 @@
+version = "1.0.0"
+
+[basic]
+guild_id = 0             # Change! Must be a valid guild (server) ID.
+admin_role_id = 0        # Change! Must be a valid role ID.
+bot_channel_id = 0       # Change! Must be a valid channel ID.
+
+[basic.temporary_files]
+directory = ".temp"      # Directory for temporary files.
+clear_on_startup = true  # Clear temporary files when the bot starts.
+clear_on_shutdown = true # Clear temporary files when the bot shuts down.
+
+[basic.logger]
+level = "info"           # Logging level. Options: "debug", "info", "warning", "error", "critical".
+directory = "logs"       # Directory for log files.
+filename_format = "%Y-%m-%d_%H-%M-%S.log"  # Log file name format.
+traceback_in_console = false  # Show traceback in the console.
+
+[role_assignment]
+enabled = true            # Enable role assignment module.
+data_filepath = "data/role_assignment.json"  # Path to the role assignment data file (must be a JSON file).
+
+[status]
+enabled = true            # Enable status module.
+data_filepath = "data/status.json"  # Path to the status data file (must be a JSON file).
+
+[voice_channel_manager]
+enabled = true            # Enable voice channel manager.
+managed_category_id = 0  # Change! Must be a valid category ID.
+
+channel_order_strategy = "first available"  # Options: "random" or "first available".
+ensure_unique_names = true  # Ensure channel names are unique.
+overflow_channel_name = "Room {number}"  # Fallback name. {number} will be replaced with a number based on the order.
+
+available_channel_names = ["Room A", "Room B"]  # Predefined channel names. Leave empty for defaults.
+
+[voice_channel_manager.commands]
+limit = true             # Allow users to limit the number of participants in their channel.
+name = true              # Allow users to rename their channels.
+
+[voice_channel_manager.listeners]
+log_channel_events = true  # Log details about channels when created, deleted, or updated.
+log_member_events = true   # Log details about users joining, leaving, or being moved.
