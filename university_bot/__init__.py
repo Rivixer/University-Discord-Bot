@@ -11,7 +11,7 @@ Features
 - event management, including reminders
 - bot messaging, including embeds
 - registering users with the student's email address
-- setting bot's status
+- setting bot's presence
 - management of voice channels
 - custom plugins
 """
@@ -25,6 +25,7 @@ __version__ = "1.0.0.alpha"
 from .bot import *
 from .console import *
 from .errors import *
+from .models import configs  # type: ignore
 from .utils import *
 
 # TODO: Temporary import for backwards compatibility with the old utils module.

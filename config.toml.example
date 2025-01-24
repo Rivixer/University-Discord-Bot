@@ -16,13 +16,13 @@ directory = "logs"       # Directory for log files.
 filename_format = "%Y-%m-%d_%H-%M-%S.log"  # Log file name format.
 traceback_in_console = false  # Show traceback in the console.
 
+[presence]
+enabled = true            # Enable presence module.
+data_filepath = "data/presence.json"  # Path to the presence data file (must be a JSON file).
+
 [role_assignment]
 enabled = true            # Enable role assignment module.
 data_filepath = "data/role_assignment.json"  # Path to the role assignment data file (must be a JSON file).
-
-[status]
-enabled = true            # Enable status module.
-data_filepath = "data/status.json"  # Path to the status data file (must be a JSON file).
 
 [voice_channel_manager]
 enabled = true            # Enable voice channel manager.

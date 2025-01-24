@@ -39,7 +39,7 @@ if TYPE_CHECKING:
     from nextcord import User
     from nextcord.ext.commands import Cog
 
-    from university_bot import Interaction
+    from university_bot.utils.types import Interaction
 
 __all__ = (
     "InteractionUtils",
