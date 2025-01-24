@@ -6,9 +6,7 @@ from __future__ import annotations
 import asyncio
 import json
 import os
-import tempfile
 from dataclasses import dataclass
-from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from nextcord import (
@@ -54,8 +52,6 @@ class RoleAssignmentService:
         The role assignment configuration.
     data: :class:`.RoleAssignmentDataConfig`
         The role assignment data configuration.
-    is_data_valid: :class:`bool`
-        Whether the data is valid.
     """
 
     __slots__ = (
@@ -181,28 +177,17 @@ class RoleAssignmentService:
         await self.load_view(handler)
 
     def _save_data(self) -> None:
-        model_dump = self.data.model_dump()
-        temp_file: Path | None = None
-
         try:
-            with tempfile.NamedTemporaryFile(
-                "w",
-                delete=False,
-                dir=self.bot.temporary_files_config.directory,
-                encoding="utf-8",
-            ) as f:
-                temp_file = Path(f.name)
-                json.dump(model_dump, f, indent=4)
-                f.flush()
-                os.fsync(f.fileno())
+            with self.bot.temporary_files_config.context() as ctx:
+                with ctx.open("w", encoding="utf-8") as f:
+                    json.dump(self.data.model_dump(), f, indent=4)
+                    f.flush()
+                    os.fsync(f.fileno())
+                os.replace(ctx, self.config.data_filepath)
+            _logger.debug("Data saved successfully.")
         except Exception as e:
             _logger.error("Failed to save data.", exc_info=True)
-            if temp_file:
-                temp_file.unlink(missing_ok=True)
             raise ConfigurationSaveFailed("Failed to save data.") from e
-
-        self.config.data_filepath.unlink(missing_ok=True)
-        Path(f.name).rename(self.config.data_filepath)
 
     def _load_data(self) -> dict[str, Any]:
         with open(self.config.data_filepath, "r", encoding="utf-8") as f:
