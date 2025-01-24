@@ -23,7 +23,7 @@ import logging
 import os
 import sys
 import time
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 import dotenv
 import nextcord
@@ -35,11 +35,11 @@ from pydantic_core import ValidationError
 
 from university_bot.utils.config_loader import ConfigLoader
 
-from .models.configs import BasicConfig, LoggerConfig, TemporaryFilesConfig
+from .models.configs import TemporaryFilesConfig
 from .utils.logger import configure_logger
 
 if TYPE_CHECKING:
-    from .utils.config_loader import ImmutableConfig
+    from .models.configs import BotConfig
 
 __all__ = ("UniversityBot",)
 
@@ -52,8 +52,7 @@ class UniversityBot(Bot):
     parameter in :func:`setup` in the cog's file.
     """
 
-    _basic_config: BasicConfig
-    _config: ImmutableConfig
+    _config: BotConfig
     _logger: logging.Logger
     _bot_channel: TextChannel
     _guild: Guild
@@ -70,26 +69,18 @@ class UniversityBot(Bot):
             sys.exit(1)
 
         try:
-            logger_config = LoggerConfig(**self._config["basic"]["logger"])
+            self._logger = configure_logger(self._config.basic.logger)
         except ValidationError:
             logging.critical("Basic logger config is invalid!", exc_info=True)
             raise
 
-        self._logger = configure_logger(logger_config)
-
-        try:
-            self._basic_config = BasicConfig(**self._config["basic"])
-        except ValidationError:
-            self._logger.critical("Basic config is invalid!")
-            raise
-
-        if self.temporary_files_config.clear_on_startup:
-            self.temporary_files_config.clear()
+        if self.config.basic.temporary_files.clear_on_startup:
+            self.config.basic.temporary_files.clear()
 
         super().__init__(
             intents=Intents.all(),
             case_insensitive=True,
-            default_guild_ids=[self._basic_config.guild_id],
+            default_guild_ids=[self.config.basic.guild_id],
         )
 
     async def on_connect(self) -> None:
@@ -100,14 +91,14 @@ class UniversityBot(Bot):
         await self.sync_all_application_commands()
 
     @property
-    def config(self) -> ImmutableConfig:
-        """Returns the bot configuration from the `config.toml` file."""
+    def config(self) -> BotConfig:
+        """Returns the bot configuration."""
         return self._config
 
     @property
     def temporary_files_config(self) -> TemporaryFilesConfig:
         """Returns the temporary files configuration."""
-        return self._basic_config.temporary_files
+        return self.config.basic.temporary_files
 
     @property
     def guild(self) -> Guild:
@@ -128,7 +119,7 @@ class UniversityBot(Bot):
         self._bot_channel = channel
 
     async def _set_bot_channel(self) -> None:
-        channel_id = self._basic_config.bot_channel_id
+        channel_id = self.config.basic.bot_channel_id
         channel = self._guild.get_channel(channel_id)
 
         if not isinstance(channel, TextChannel):
@@ -145,7 +136,7 @@ class UniversityBot(Bot):
         self._logger.debug("Set bot channel to bot instance")
 
     async def _set_guild(self) -> None:
-        guild_id = self._basic_config.guild_id
+        guild_id = self.config.basic.guild_id
         if (guild := self.get_guild(guild_id)) is None:
             self._logger.critical("Guild %s not found!", guild_id)
             sys.exit(1)
@@ -169,7 +160,7 @@ class UniversityBot(Bot):
                 continue
 
             cog_name = cog_filename[:-3]
-            cog_config = self.config.get(cog_name)
+            cog_config = getattr(self.config, cog_name, None)
 
             if cog_config is None:
                 self._logger.warning(
@@ -177,7 +168,7 @@ class UniversityBot(Bot):
                 )
                 continue
 
-            if (enabled := cog_config.get("enabled")) is None:
+            if (enabled := getattr(cog_config, "enabled", None)) is None:
                 self._logger.warning(
                     "`enabled` key for `%s` cog is missing, loading anyway.",
                     cog_name,
@@ -186,7 +177,7 @@ class UniversityBot(Bot):
             if enabled:
                 self.load_cog(f"university_bot.cogs.{cog_name}", cog_name)
 
-        logging.info("Cogs loaded.")
+        self._logger.info("Cogs loaded.")
         self._cogs_loaded = True
 
     def load_cog(self, name: str, display_name: str | None = None) -> bool:

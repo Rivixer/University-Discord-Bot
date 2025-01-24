@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Any
 from nextcord import ButtonStyle, Color, Embed
 from pydantic import BaseModel, ConfigDict, field_validator, model_validator
 
-from ... import ConfigUtils
+from university_bot.utils2 import ConfigUtils
 
 if TYPE_CHECKING:
     from nextcord import Guild, Role
@@ -29,6 +29,7 @@ __all__ = (
 class RoleAssignmentConfig(BaseModel):
     """The Role Assignment configuration."""
 
+    enabled: bool = True
     data_filepath: Path
 
     @field_validator("data_filepath", mode="before")

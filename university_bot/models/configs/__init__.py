@@ -6,6 +6,17 @@ university_bot.models.configs
 This module contains the configuration models for the bot.
 """
 
-from .basic import *
+from pydantic import BaseModel
 
-__all__ = ("basic",)
+from .basic import BasicConfig, TemporaryFilesConfig  # type: ignore
+from .presence import PresenceConfig
+from .role_assignment import RoleAssignmentConfig
+
+
+class BotConfig(BaseModel):
+    """The bot configuration"""
+
+    version: tuple[int, int, int]
+    basic: BasicConfig
+    role_assignment: RoleAssignmentConfig
+    presence: PresenceConfig

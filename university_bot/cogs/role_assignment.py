@@ -8,7 +8,6 @@ from typing import TYPE_CHECKING
 import nextcord
 from nextcord import Attachment, SlashOption
 from nextcord.ext.commands import Cog
-from pydantic import ValidationError
 
 from .. import Interaction, catch_interaction_exceptions
 from ..exceptions.configuration_view import ContentTooLongError
@@ -43,13 +42,8 @@ class RoleAssignmentCog(Cog):
     handler: RoleAssignmentHandler
 
     def __init__(self, bot: UniversityBot) -> None:
-        self.__cog_name__ = "Role Assignment"
         self.bot = bot
-
-        try:
-            self.config = RoleAssignmentConfig(**bot.config["role_assignment"])
-        except ValidationError as e:
-            raise LoadCogError(self, "Error while loading configuration.") from e
+        self.config = self.bot.config.role_assignment
 
         try:
             self.service = RoleAssignmentService(bot, self.config)

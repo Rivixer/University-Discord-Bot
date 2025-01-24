@@ -9,7 +9,7 @@ from typing import Any, override
 
 from colorama import Fore, Style
 
-from ..models.configs import LoggerConfig
+from ..models.configs.basic import LoggerConfig
 
 __all__ = ("get_logger",)
 
@@ -125,7 +125,7 @@ def configure_logger(config: LoggerConfig) -> logging.Logger:
     root_logger = logging.getLogger()
     root_logger.setLevel(config.level.upper())
     root_logger.handlers.clear()
-    root_logger.name = __name__.split(".")[0]
+    root_logger.name = __name__.split(".", maxsplit=1)[0]
 
     console_formatter = ConsoleLoggerFormatter(log_format, date_format, config)
     console_handler = logging.StreamHandler()

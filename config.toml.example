@@ -1,4 +1,4 @@
-version = "1.0.0"
+version = [1, 0, 0]
 
 [basic]
 guild_id = 0             # Change! Must be a valid guild (server) ID.
