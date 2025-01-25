@@ -1,6 +1,8 @@
 # SPDX-License-Identifier: MIT
 """A module for configuring and using the logger."""
 
+from __future__ import annotations
+
 import logging
 from abc import ABC
 from datetime import datetime
@@ -11,7 +13,7 @@ from colorama import Fore, Style
 
 from ..models.configs.basic import LoggerConfig
 
-__all__ = ("get_logger",)
+__all__ = ("get_logger", "PhraseFilter")
 
 
 class LoggerFormatter(logging.Formatter, ABC):
@@ -165,3 +167,54 @@ def get_logger(name: str, level: int | None = None) -> logging.Logger:
         logger.propagate = True
 
     return logger
+
+
+class PhraseFilter(logging.Filter):  # pylint: disable=too-few-public-methods
+    """A filter to filter log records by phrases.
+
+    Attributes
+    ----------
+    phrases: :class:`tuple`[:class:`str`, ...]
+        The phrases to filter by.
+    case_sensitive: :class:`bool`
+        Whether the filter is case sensitive.
+    logger_name: :class:`str`
+        The name of the logger to which the filter will be applied.
+
+    Examples
+    --------
+    ```python
+    filter = PhraseFilter("error")
+    logger.addFilter(filter)
+    logger.error("An error occurred.")  # The message will be filtered out.
+    logger.removeFilter(filter)
+    """
+
+    phrases: tuple[str, ...]
+    case_sensitive: bool
+    logger_name: str
+    logger: logging.Logger
+
+    def __init__(
+        self,
+        *phrases: str,
+        case_sensitive: bool = True,
+        logger_name: str = "",
+    ) -> None:
+        super().__init__()
+        self.phrases = phrases
+        self.case_sensitive = case_sensitive
+        self.logger_name = logger_name
+        self.logger = get_logger(logger_name)
+
+    @override
+    def filter(self, record: logging.LogRecord) -> bool:
+        message = record.getMessage()
+
+        if not self.case_sensitive:
+            message = message.lower()
+            phrases = [phrase.lower() for phrase in self.phrases]
+        else:
+            phrases = self.phrases
+
+        return not any(phrase in message for phrase in phrases)
