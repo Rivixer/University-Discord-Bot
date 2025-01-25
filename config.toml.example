@@ -27,6 +27,7 @@ data_filepath = "data/role_assignment.json"  # Path to the role assignment data 
 [voice_channel_manager]
 enabled = true            # Enable voice channel manager.
 managed_category_id = 0  # Change! Must be a valid category ID.
+ignore_bots = true  # Ignore bot users when determining if a channel is empty
 
 channel_order_strategy = "first available"  # Options: "random" or "first available".
 ensure_unique_names = true  # Ensure channel names are unique.
@@ -34,10 +35,7 @@ overflow_channel_name = "Room {number}"  # Fallback name. {number} will be repla
 
 available_channel_names = ["Room A", "Room B"]  # Predefined channel names. Leave empty for defaults.
 
-[voice_channel_manager.commands]
-limit = true             # Allow users to limit the number of participants in their channel.
-name = true              # Allow users to rename their channels.
-
-[voice_channel_manager.listeners]
-log_channel_events = true  # Log details about channels when created, deleted, or updated.
-log_member_events = true   # Log details about users joining, leaving, or being moved.
+[voice_channel_manager.logging]
+channel_events = true  # Log details about the channel when it is created, deleted, or updated
+member_events = true  # Log details about the user when they join, leave, or are moved
+rate_limit = false  # Log discord rate limit warnings/errors
