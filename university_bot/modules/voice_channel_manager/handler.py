@@ -8,8 +8,9 @@ from typing import TYPE_CHECKING, Any
 
 from nextcord import HTTPException, VoiceChannel
 
-from .. import get_logger
-from ..exceptions.voice_channel_manager import (
+from university_bot import get_logger
+
+from .exceptions import (
     RateLimitExceeded,
     UnmanagedCategory,
     VoiceChannelManagerException,
@@ -18,8 +19,9 @@ from ..exceptions.voice_channel_manager import (
 if TYPE_CHECKING:
     from nextcord import Member, VoiceState
 
-    from .. import Interaction
-    from ..services.voice_channel_manager import VoiceChannelManagerService
+    from university_bot import Interaction
+
+    from .service import VoiceChannelManagerService
 
 _logger = get_logger(__name__)
 

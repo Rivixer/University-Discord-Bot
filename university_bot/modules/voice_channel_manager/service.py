@@ -10,8 +10,9 @@ from typing import TYPE_CHECKING, Concatenate
 
 from nextcord import HTTPException, NotFound
 
-from .. import PhraseFilter, get_logger, get_voice_channel_by_name
-from ..exceptions.voice_channel_manager import (
+from university_bot import PhraseFilter, get_logger, get_voice_channel_by_name
+
+from .exceptions import (
     InvalidConfiguration,
     MissingPermissions,
     RateLimitExceeded,
@@ -22,8 +23,9 @@ from ..exceptions.voice_channel_manager import (
 if TYPE_CHECKING:
     from nextcord import CategoryChannel, Guild, Member, VoiceChannel, VoiceState
 
-    from .. import UniversityBot
-    from ..models.configs.voice_channel_manager import VoiceChannelManagerConfig
+    from university_bot import UniversityBot
+
+    from .config import VoiceChannelManagerConfig
 
 _logger = get_logger(__name__)
 

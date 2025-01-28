@@ -11,7 +11,7 @@ from typing import Any, override
 
 from colorama import Fore, Style
 
-from ..models.configs.basic import LoggerConfig
+from ..config import LoggerConfig
 
 __all__ = ("get_logger", "PhraseFilter")
 

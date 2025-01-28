@@ -6,9 +6,9 @@ from typing import Any, Callable
 
 from nextcord import HTTPException
 
+from ..types import Interaction
 from .exceptions import format_exception_chain
 from .logger import get_logger
-from .types import Interaction
 
 __all__ = ("catch_interaction_exceptions",)
 

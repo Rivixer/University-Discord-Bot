@@ -28,7 +28,7 @@ from typing import (
 )
 
 import nextcord
-from nextcord import HTTPException, Member, TextChannel, Thread
+from nextcord import Member, TextChannel, Thread
 from nextcord.abc import Messageable
 from pydantic import BaseModel
 
@@ -39,7 +39,7 @@ if TYPE_CHECKING:
     from nextcord import User
     from nextcord.ext.commands import Cog
 
-    from university_bot.utils.types import Interaction
+    from university_bot.types import Interaction
 
 __all__ = (
     "InteractionUtils",

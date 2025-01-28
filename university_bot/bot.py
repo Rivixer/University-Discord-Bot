@@ -23,6 +23,7 @@ import logging
 import os
 import sys
 import time
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 import dotenv
@@ -33,13 +34,11 @@ from nextcord.flags import Intents
 from nextcord.guild import Guild
 from pydantic_core import ValidationError
 
-from university_bot.utils.config_loader import ConfigLoader
-
-from .models.configs import TemporaryFilesConfig
+from .config import BasicConfig, ConfigLoader, TemporaryFilesConfig
 from .utils.logger import configure_logger
 
 if TYPE_CHECKING:
-    from .models.configs import BotConfig
+    from university_bot.config import BotConfig
 
 __all__ = ("UniversityBot",)
 
@@ -69,18 +68,18 @@ class UniversityBot(Bot):
             sys.exit(1)
 
         try:
-            self._logger = configure_logger(self._config.basic.logger)
+            self._logger = configure_logger(self._basic_config.logger)
         except ValidationError:
-            logging.critical("Basic logger config is invalid!", exc_info=True)
+            logging.critical("Logger config is invalid!", exc_info=True)
             raise
 
-        if self.config.basic.temporary_files.clear_on_startup:
-            self.config.basic.temporary_files.clear()
+        if self.temporary_files_config.clear_on_startup:
+            self.temporary_files_config.clear()
 
         super().__init__(
             intents=Intents.all(),
             case_insensitive=True,
-            default_guild_ids=[self.config.basic.guild_id],
+            default_guild_ids=[self._basic_config.guild_id],
         )
 
     async def on_connect(self) -> None:
@@ -96,9 +95,14 @@ class UniversityBot(Bot):
         return self._config
 
     @property
+    def _basic_config(self) -> BasicConfig:
+        """Returns the basic configuration."""
+        return self.config.basic
+
+    @property
     def temporary_files_config(self) -> TemporaryFilesConfig:
         """Returns the temporary files configuration."""
-        return self.config.basic.temporary_files
+        return self._basic_config.temporary_files
 
     @property
     def guild(self) -> Guild:
@@ -119,7 +123,7 @@ class UniversityBot(Bot):
         self._bot_channel = channel
 
     async def _set_bot_channel(self) -> None:
-        channel_id = self.config.basic.bot_channel_id
+        channel_id = self._basic_config.bot_channel_id
         channel = self._guild.get_channel(channel_id)
 
         if not isinstance(channel, TextChannel):
@@ -136,7 +140,7 @@ class UniversityBot(Bot):
         self._logger.debug("Set bot channel to bot instance")
 
     async def _set_guild(self) -> None:
-        guild_id = self.config.basic.guild_id
+        guild_id = self._basic_config.guild_id
         if (guild := self.get_guild(guild_id)) is None:
             self._logger.critical("Guild %s not found!", guild_id)
             sys.exit(1)
@@ -148,34 +152,45 @@ class UniversityBot(Bot):
 
     async def _load_cogs(self) -> None:
         if self._cogs_loaded:
+            self._logger.warning("Cogs have already been loaded.")
             return
 
         self._logger.info("Loading cogs.")
 
-        for cog_filename in os.listdir("university_bot/cogs"):
-            if not cog_filename.endswith(".py"):
+        modules_path = Path("university_bot/modules")
+
+        for module_name in os.listdir(modules_path):
+            module_path = modules_path / module_name
+            cog_path = module_path / "cog.py"
+
+            if not cog_path.exists():
+                self._logger.warning(
+                    "Cog file for '%s' module is missing, skipping.",
+                    module_name,
+                )
                 continue
 
-            if cog_filename == "__init__.py":
-                continue
-
-            cog_name = cog_filename[:-3]
-            cog_config = getattr(self.config, cog_name, None)
+            cog_config = self.config.get(module_name)
 
             if cog_config is None:
                 self._logger.warning(
-                    "Config for '%s' cog is missing, skipping.", cog_name
+                    "Config for '%s' cog is missing, skipping.",
+                    module_name,
                 )
                 continue
 
-            if (enabled := getattr(cog_config, "enabled", None)) is None:
+            if (enabled := cog_config["enabled"]) is None:
                 self._logger.warning(
-                    "`enabled` key for `%s` cog is missing, loading anyway.",
-                    cog_name,
+                    "enabled key for %s cog is missing, loading anyway.",
+                    module_name,
                 )
+                enabled = True
 
-            if enabled:
-                self.load_cog(f"university_bot.cogs.{cog_name}", cog_name)
+            if not enabled:
+                continue
+
+            cog_import_path = f"university_bot.modules.{module_name}.cog"
+            self.load_cog(cog_import_path, module_name)
 
         self._logger.info("Cogs loaded.")
         self._cogs_loaded = True
@@ -204,6 +219,7 @@ class UniversityBot(Bot):
             )
             return True
         except (
+            ImportError,
             ExtensionError,
             ModuleNotFoundError,
             nextcord.errors.HTTPException,

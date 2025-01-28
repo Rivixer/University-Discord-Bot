@@ -20,23 +20,25 @@ from nextcord import (
 from nextcord.utils import MISSING
 from pydantic import ValidationError
 
-from .. import get_logger
-from ..exceptions.role_assignment import (
+from university_bot import get_logger
+
+from .config import RoleAssignmentDataConfig
+from .exceptions import (
     ConfigurationSaveFailed,
     InvalidConfiguration,
     ResourceFetchFailed,
     RoleAssignmentFailed,
     ViewNotLoaded,
 )
-from ..handlers.role_assignment import RoleAssignmentHandler
-from ..models.configs.role_assignment import RoleAssignmentDataConfig
-from ..views.role_assignment import RoleAssignmentView
+from .handler import RoleAssignmentHandler
+from .views import RoleAssignmentView
 
 if TYPE_CHECKING:
     from nextcord import Embed, Member, Message, Role
 
-    from .. import UniversityBot
-    from ..models.configs.role_assignment import RoleAssignmentConfig
+    from university_bot import UniversityBot
+
+    from .config import RoleAssignmentConfig
 
 _logger = get_logger(__name__)
 

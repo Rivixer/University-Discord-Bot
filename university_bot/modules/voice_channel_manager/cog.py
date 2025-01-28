@@ -8,20 +8,18 @@ from typing import TYPE_CHECKING
 from nextcord import SlashOption, slash_command
 from nextcord.ext import commands
 
-from .. import Interaction, catch_interaction_exceptions
-from ..exceptions.voice_channel_manager import (
-    InvalidConfiguration,
-    VoiceChannelManagerException,
-)
-from ..handlers.voice_channel_manager import VoiceChannelManagerHandler
-from ..models.configs.voice_channel_manager import VoiceChannelManagerConfig
-from ..services.voice_channel_manager import VoiceChannelManagerService
-from . import LoadCogError
+from university_bot import Interaction, catch_interaction_exceptions
+from university_bot.exceptions.cog import LoadCogError
+
+from .config import VoiceChannelManagerConfig
+from .exceptions import InvalidConfiguration, VoiceChannelManagerException
+from .handler import VoiceChannelManagerHandler
+from .service import VoiceChannelManagerService
 
 if TYPE_CHECKING:
     from nextcord import Member, VoiceState
 
-    from .. import UniversityBot
+    from university_bot import UniversityBot
 
 
 class VoiceChannelManager(commands.Cog):
@@ -34,7 +32,19 @@ class VoiceChannelManager(commands.Cog):
 
     def __init__(self, bot: UniversityBot) -> None:
         self.bot = bot
-        self.config = self.bot.config.voice_channel_manager
+
+        try:
+            self.config = VoiceChannelManagerConfig(
+                **bot.config["voice_channel_manager"]
+            )
+        except KeyError as e:
+            raise LoadCogError(
+                self, "Voice channel manager configuration not found."
+            ) from e
+        except ValueError as e:
+            raise LoadCogError(
+                self, "Invalid voice channel manager configuration."
+            ) from e
 
         try:
             self.service = VoiceChannelManagerService(bot, self.config)

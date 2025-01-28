@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Any, Literal
 from nextcord import CategoryChannel
 from pydantic import BaseModel, model_validator
 
-from university_bot.exceptions.voice_channel_manager import MissingPermissions
+from .exceptions import MissingPermissions
 
 if TYPE_CHECKING:
     from nextcord import Guild

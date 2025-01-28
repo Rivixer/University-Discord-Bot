@@ -8,13 +8,14 @@ from typing import TYPE_CHECKING
 
 from nextcord import ActivityType, HTTPException, Status
 
-from university_bot.exceptions.presence import InvalidEnumConversion
+from university_bot import get_logger
 
-from .. import get_logger
+from .exceptions import InvalidEnumConversion
 
 if TYPE_CHECKING:
-    from .. import Interaction
-    from ..services.presence import PresenceService
+    from university_bot import Interaction
+
+    from .service import PresenceService
 
 
 _logger = get_logger(__name__)

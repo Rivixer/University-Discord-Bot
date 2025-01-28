@@ -8,17 +8,19 @@ from typing import TYPE_CHECKING
 import nextcord
 from nextcord import Attachment, SlashOption
 from nextcord.ext.commands import Cog
+from pydantic import ValidationError
 
-from .. import Interaction, catch_interaction_exceptions
-from ..exceptions.configuration_view import ContentTooLongError
-from ..exceptions.role_assignment import InvalidConfiguration, RoleAssignmentError
-from ..handlers.role_assignment import RoleAssignmentHandler
-from ..models.configs.role_assignment import RoleAssignmentConfig
-from ..services.role_assignment import RoleAssignmentService
-from . import LoadCogError
+from university_bot import Interaction, catch_interaction_exceptions
+from university_bot.exceptions.cog import LoadCogError
+from university_bot.exceptions.configuration_view import ContentTooLongError
+
+from .config import RoleAssignmentConfig
+from .exceptions import InvalidConfiguration, RoleAssignmentError
+from .handler import RoleAssignmentHandler
+from .service import RoleAssignmentService
 
 if TYPE_CHECKING:
-    from .. import UniversityBot
+    from university_bot import UniversityBot
 
 
 class RoleAssignmentCog(Cog):
@@ -43,7 +45,13 @@ class RoleAssignmentCog(Cog):
 
     def __init__(self, bot: UniversityBot) -> None:
         self.bot = bot
-        self.config = self.bot.config.role_assignment
+
+        try:
+            self.config = RoleAssignmentConfig(**bot.config["role_assignment"])
+        except KeyError as e:
+            raise LoadCogError(self, "Role assignment configuration not found.") from e
+        except ValidationError as e:
+            raise LoadCogError(self, "Invalid role assignment configuration.") from e
 
         try:
             self.service = RoleAssignmentService(bot, self.config)

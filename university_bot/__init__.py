@@ -23,9 +23,10 @@ __copyright__ = "Copyright 2023-2025 Wiktor Jaworski"
 __version__ = "1.0.0.alpha"
 
 from .bot import *
+from .config import *
 from .console import *
 from .errors import *
-from .models import configs  # type: ignore
+from .types import *
 from .utils import *
 
 # TODO: Temporary import for backwards compatibility with the old utils module.

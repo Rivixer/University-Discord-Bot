@@ -9,15 +9,16 @@ import nextcord
 from nextcord import ActivityType, SlashOption, Status
 from nextcord.ext import commands
 
-from .. import Interaction, catch_interaction_exceptions
-from ..exceptions.presence import InvalidPresenceData, PresenceException
-from ..handlers.presence import PresenceHandler
-from ..models.configs.presence import PresenceConfig
-from ..services.presence import PresenceService
-from . import LoadCogError
+from university_bot import Interaction, catch_interaction_exceptions
+from university_bot.exceptions.cog import LoadCogError
+
+from .config import PresenceConfig
+from .exceptions import InvalidPresenceData, PresenceException
+from .handler import PresenceHandler
+from .service import PresenceService
 
 if TYPE_CHECKING:
-    from .. import UniversityBot
+    from university_bot import UniversityBot
 
 
 class PresenceCog(commands.Cog):
@@ -45,7 +46,14 @@ class PresenceCog(commands.Cog):
 
     def __init__(self, bot: UniversityBot) -> None:
         self.bot = bot
-        self.config = self.bot.config.presence
+
+        try:
+            self.config = PresenceConfig(**self.bot.config["presence"])
+        except KeyError as e:
+            raise LoadCogError(self, "Presence configuration not found.") from e
+        except ValueError as e:
+            raise LoadCogError(self, "Invalid presence configuration.") from e
+
         try:
             self.service = PresenceService(self.bot, self.config)
         except InvalidPresenceData as e:

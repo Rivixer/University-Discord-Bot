@@ -16,23 +16,25 @@ from nextcord import (
 )
 from nextcord.utils import MISSING
 
-from .. import InteractionUtils, catch_interaction_exceptions, get_logger
-from ..exceptions.role_assignment import (
+from university_bot import InteractionUtils, catch_interaction_exceptions, get_logger
+from university_bot.views.configuration import EditConfigurationModal
+
+from .exceptions import (
     ConfigurationSaveFailed,
     ConfigurationUpdateError,
     InvalidConfiguration,
     RoleAssignmentError,
     RoleAssignmentFailed,
 )
-from ..views.configuration import EditConfigurationModal
-from ..views.role_assignment import RoleSelectView
+from .views import RoleSelectView
 
 if TYPE_CHECKING:
     from nextcord import Attachment, Guild, Member, Message, Role
 
-    from .. import Interaction
-    from ..models.configs.role_assignment import RoleAssignmentNodeConfig
-    from ..services.role_assignment import RoleAssignmentService
+    from university_bot import Interaction
+
+    from .config import RoleAssignmentNodeConfig
+    from .service import RoleAssignmentService
 
 
 _logger = get_logger(__name__)

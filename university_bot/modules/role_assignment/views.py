@@ -8,13 +8,15 @@ from typing import TYPE_CHECKING, override
 from nextcord import Member, SelectOption
 from nextcord.ui import Button, Select, View
 
-from .. import catch_interaction_exceptions
-from ..exceptions.role_assignment import RoleAssignmentError
+from university_bot import catch_interaction_exceptions
+
+from .exceptions import RoleAssignmentError
 
 if TYPE_CHECKING:
-    from .. import Interaction
-    from ..handlers.role_assignment import RoleAssignmentHandler
-    from ..models.configs.role_assignment import RoleAssignmentNodeConfig
+    from university_bot import Interaction
+
+    from .config import RoleAssignmentNodeConfig
+    from .handler import RoleAssignmentHandler
 
 
 class RoleAssignmentView(View):

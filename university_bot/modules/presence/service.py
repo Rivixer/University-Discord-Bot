@@ -10,13 +10,15 @@ from typing import TYPE_CHECKING, Any
 from nextcord import Activity, ActivityType, CustomActivity, Status
 from pydantic import ValidationError
 
-from .. import get_logger
-from ..exceptions.presence import InvalidPresenceData, PresenceDataSaveFailed
-from ..models.configs.presence import PresenceDataConfig
+from university_bot import get_logger
+
+from .config import PresenceDataConfig
+from .exceptions import InvalidPresenceData, PresenceDataSaveFailed
 
 if TYPE_CHECKING:
-    from .. import UniversityBot
-    from ..models.configs.presence import PresenceConfig
+    from university_bot import UniversityBot
+
+    from .config import PresenceConfig
 
 _logger = get_logger(__name__)
 

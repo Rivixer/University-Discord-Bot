@@ -9,5 +9,4 @@ This module provides utility functions and classes for the bot.
 from .exceptions import *
 from .interactions import *
 from .logger import *
-from .types import *
 from .voice_channels import *

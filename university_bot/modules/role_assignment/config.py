@@ -14,7 +14,7 @@ from university_bot.utils2 import ConfigUtils
 if TYPE_CHECKING:
     from nextcord import Guild, Role
 
-    from ... import EmbedDict
+    from university_bot import EmbedDict
 
 __all__ = (
     "RoleAssignmentConfig",
