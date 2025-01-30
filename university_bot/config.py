@@ -76,6 +76,7 @@ class BasicConfig(BaseModel):
     bot_channel_id: int
     temporary_files: TemporaryFilesConfig
     logger: LoggerConfig
+    localization: LocalizationConfig
 
 
 class TemporaryFilesConfig(BaseModel):
@@ -234,3 +235,18 @@ class ConfigLoader:
             raise ConfigurationLoadError("Failed to validate configuration.") from e
 
         return self.config
+
+
+class LocalizationConfig(BaseModel):
+    """A class for the localization configuration."""
+
+    directory: Path
+    enabled_locales: list[str]
+
+    @field_validator("directory", mode="before")
+    @classmethod
+    def _validate_directory(cls, value: Path | str) -> Path:
+        path = Path(value) if not isinstance(value, Path) else value
+        path.mkdir(parents=True, exist_ok=True)
+        ConfigUtils.validate_data_directory(path)
+        return path

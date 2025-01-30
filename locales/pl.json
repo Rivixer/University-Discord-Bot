@@ -1,0 +1,120 @@
+{
+    "commands": {
+        "/presence": {
+            "name": "obecność",
+            "/set_status": {
+                "name": "ustaw_status",
+                "description": "Ustaw status bota.",
+                "#params": {
+                    "status": {
+                        "name": "status",
+                        "description": "Status bota do ustawienia.",
+                        "choices": {
+                            "online": "dostępny",
+                            "idle": "zaraz wracam",
+                            "dnd": "nie przeszkadzać",
+                            "invisible": "niewidoczny"
+                        }
+                    }
+                },
+                "#responses": {
+                    "success": "Status bota został ustawiony na {status}."
+                }
+            },
+            "/set_activity": {
+                "name": "ustaw_aktywność",
+                "description": "Ustaw aktywność bota.",
+                "#params": {
+                    "type": {
+                        "name": "typ",
+                        "description": "Typ aktywności.",
+                        "choices": {
+                            "playing": "gra",
+                            "streaming": "streamuje",
+                            "listening": "słucha",
+                            "watching": "ogląda",
+                            "competing": "rywalizuje",
+                            "custom": "niestandardowe"
+                        }
+                    },
+                    "text": {
+                        "name": "tekst",
+                        "description": "Treść aktywności."
+                    }
+                },
+                "#responses": {
+                    "success": "Aktywność bota została ustawiona na: {type} {text}."
+                }
+            },
+            "/clear_activity": {
+                "name": "wyczyść_aktywność",
+                "description": "Wyczyść aktywność bota.",
+                "#responses": {
+                    "success": "Aktywność bota została wyczyszczona."
+                }
+            }
+        },
+        "/role_assignment": {
+            "name": "przypisanie_ról",
+            "/send": {
+                "name": "wyslij",
+                "#description": "Wyślij wiadomość z przypisanymi rolami."
+            },
+            "/get_configuration": {
+                "name": "pobierz_konfiguracje",
+                "description": "Pobierz konfigurację przypisania ról."
+            },
+            "/set_configuration": {
+                "name": "ustaw_konfiguracje",
+                "description": "Ustaw konfigurację przypisania ról."
+            },
+            "/edit_configuration": {
+                "name": "edytuj_konfiguracje",
+                "description": "Edytuj konfigurację przypisania ról."
+            }
+        },
+        "/voice_channel": {
+            "name": "kanał_głosowy",
+            "#responses": {
+                "not_in_voice": "Musisz być na kanale głosowym, aby użyć tej komendy."
+            },
+            "/set_limit": {
+                "name": "ustaw_limit",
+                "description": "Ustaw limit użytkowników na kanale głosowym, na którym jesteś.",
+                "#params": {
+                    "value": {
+                        "name": "wartość",
+                        "description": "Wartość limitu użytkowników na kanale głosowym."
+                    }
+                },
+                "#responses": {
+                    "unmanaged_category": "{channel.mention} Nie możesz ustawić limitu użytkowników na tym kanale głosowym.",
+                    "success": "{channel.mention} Limit użytkowników został ustawiony na `{value}`."
+                }
+            },
+            "/reset_limit": {
+                "name": "resetuj_limit",
+                "description": "Resetuj limit użytkowników na kanale głosowym, na którym jesteś.",
+                "#responses": {
+                    "unmanaged_category": "{channel.mention} Nie możesz zresetować limitu użytkowników na tym kanale głosowym.",
+                    "success": "{channel.mention} Limit użytkowników został zresetowany."
+                }
+            },
+            "/rename": {
+                "name": "zmień_nazwę",
+                "description": "Zmień nazwę kanału głosowego, na którym jesteś (maks. 2 razy na 10 minut).",
+                "#params": {
+                    "name": {
+                        "name": "nazwa",
+                        "description": "Nowa nazwa kanału głosowego."
+                    }
+                },
+                "#responses": {
+                    "unmanaged_category": "{channel.mention} Nie możesz zmienić nazwy tego kanału głosowego.",
+                    "rate_limit_exceeded": "{channel.mention} Zmiana nazwy nie powiodła się.\nMożesz zmienić nazwę kanału głosowego maksymalnie 2 razy na 10 minut (ograniczenia Discorda).",
+                    "success": "{channel.mention} Nazwa kanału głosowego została zmieniona."
+                }
+            }
+        }
+    }
+}

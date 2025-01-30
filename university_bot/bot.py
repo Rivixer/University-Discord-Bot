@@ -34,6 +34,8 @@ from nextcord.flags import Intents
 from nextcord.guild import Guild
 from pydantic_core import ValidationError
 
+from university_bot.utils.localization import Localization
+
 from .config import BasicConfig, ConfigLoader, TemporaryFilesConfig
 from .utils.logger import configure_logger
 
@@ -75,6 +77,8 @@ class UniversityBot(Bot):
 
         if self.temporary_files_config.clear_on_startup:
             self.temporary_files_config.clear()
+
+        Localization.load(self._basic_config.localization)
 
         super().__init__(
             intents=Intents.all(),

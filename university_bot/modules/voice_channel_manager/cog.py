@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 from nextcord import SlashOption, slash_command
 from nextcord.ext import commands
 
-from university_bot import Interaction, catch_interaction_exceptions
+from university_bot import Interaction, Localization, catch_interaction_exceptions
 from university_bot.exceptions.cog import LoadCogError
 
 from .config import VoiceChannelManagerConfig
@@ -64,10 +64,12 @@ class VoiceChannelManager(commands.Cog):
     ):
         await self.handler.on_voice_state_update(member, before, after)
 
+    @Localization.apply_localizations
     @slash_command(name="voice_channel")
     async def _voice_channel(self, *_) -> None:
         """Placeholder for the voice_channel command group."""
 
+    @Localization.apply_localizations
     @_voice_channel.subcommand(
         name="set_limit",
         description="Set the limit of the voice channel you are in.",
@@ -84,6 +86,7 @@ class VoiceChannelManager(commands.Cog):
     ) -> None:
         await self.handler.set_limit(interaction, value)
 
+    @Localization.apply_localizations
     @_voice_channel.subcommand(
         name="reset_limit",
         description="Reset the limit of the voice channel you are in.",
@@ -92,6 +95,7 @@ class VoiceChannelManager(commands.Cog):
     async def _reset_limit(self, interaction: Interaction) -> None:
         await self.handler.reset_limit(interaction)
 
+    @Localization.apply_localizations
     @_voice_channel.subcommand(
         name="rename",
         description="Rename the voice channel you are in (max 2 times per 10 minutes).",

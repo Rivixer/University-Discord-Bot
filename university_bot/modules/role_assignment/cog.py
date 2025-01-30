@@ -10,7 +10,7 @@ from nextcord import Attachment, SlashOption
 from nextcord.ext.commands import Cog
 from pydantic import ValidationError
 
-from university_bot import Interaction, catch_interaction_exceptions
+from university_bot import Interaction, Localization, catch_interaction_exceptions
 from university_bot.exceptions.cog import LoadCogError
 from university_bot.exceptions.configuration_view import ContentTooLongError
 
@@ -61,10 +61,12 @@ class RoleAssignmentCog(Cog):
         self.handler = RoleAssignmentHandler(self.service)
         self.bot.loop.create_task(self.service.load_view(self.handler))
 
+    @Localization.apply_localizations
     @nextcord.slash_command(name="role_assignment")
     async def _role_assignment(self, *_) -> None:
         """Placeholder for the role_assignment command group."""
 
+    @Localization.apply_localizations
     @_role_assignment.subcommand(
         name="send",
         description="Send a new role_assignment message.",
@@ -73,6 +75,7 @@ class RoleAssignmentCog(Cog):
     async def _send(self, interaction: Interaction, preview: bool = False) -> None:
         await self.handler.send_message(interaction, preview)
 
+    @Localization.apply_localizations
     @_role_assignment.subcommand(
         name="get_configuration",
         description="Get the configuration of the role assignment.",
@@ -81,6 +84,7 @@ class RoleAssignmentCog(Cog):
     async def _get_configuration(self, interaction: Interaction) -> None:
         await self.handler.get_configuration(interaction)
 
+    @Localization.apply_localizations
     @_role_assignment.subcommand(
         name="set_configuration",
         description="Set the configuration of the role assignment.",
@@ -95,6 +99,7 @@ class RoleAssignmentCog(Cog):
     ) -> None:
         await self.handler.set_configuration(interaction, attachment)
 
+    @Localization.apply_localizations
     @_role_assignment.subcommand(
         name="edit_configuration",
         description="Edit the configuration of the role assignment.",

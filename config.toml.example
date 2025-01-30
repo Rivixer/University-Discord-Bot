@@ -16,6 +16,10 @@ directory = "logs"       # Directory for log files.
 filename_format = "%Y-%m-%d_%H-%M-%S.log"  # Log file name format.
 traceback_in_console = false  # Show traceback in the console.
 
+[basic.localization]
+directory = "locales"    # Directory for localization files.
+enabled_locales = ["pl"]  # Enabled locales.
+
 [presence]
 enabled = true            # Enable presence module.
 data_filepath = "data/presence.json"  # Path to the presence data file (must be a JSON file).

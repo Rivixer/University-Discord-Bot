@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Any
 
 from nextcord import HTTPException, VoiceChannel
 
-from university_bot import get_logger
+from university_bot import Localization, get_logger
 
 from .exceptions import (
     RateLimitExceeded,
@@ -108,17 +108,24 @@ class VoiceChannelManagerHandler:
         try:
             await self.service.set_limit(channel, value)
         except UnmanagedCategory:
-            await self._attempt_send_message(
+            content = Localization.get_command_response(
                 interaction,
-                "You cannot set the limit of this channel.",
+                "unmanaged_category",
+                "{channel.mention} You cannot set the limit of this channel.",
+                channel=channel,
             )
         except ValueError as e:
             raise VoiceChannelManagerException("Invalid user limit.") from e
         else:
-            await self._attempt_send_message(
+            content = Localization.get_command_response(
                 interaction,
-                f"{channel.mention} User limit has been set to `{value}`.",
+                "success",
+                "{channel.mention} User limit has been set to `{value}`.",
+                channel=channel,
+                value=value,
             )
+
+        await self._attempt_send_message(interaction, content)
 
     async def reset_limit(self, interaction: Interaction) -> None:
         """|coro|
@@ -142,15 +149,21 @@ class VoiceChannelManagerHandler:
         try:
             await self.service.set_limit(channel, 0)
         except UnmanagedCategory:
-            await self._attempt_send_message(
+            content = Localization.get_command_response(
                 interaction,
-                "You cannot reset the limit of this channel.",
+                "unmanaged_category",
+                "{channel.mention} You cannot reset the limit of this channel.",
+                channel=channel,
             )
         else:
-            await self._attempt_send_message(
+            content = Localization.get_command_response(
                 interaction,
-                f"{channel.mention} User limit has been reset.",
+                "success",
+                "{channel.mention} User limit has been reset.",
+                channel=channel,
             )
+
+        await self._attempt_send_message(interaction, content)
 
     async def rename(self, interaction: Interaction, name: str) -> None:
         """|coro|
@@ -176,30 +189,39 @@ class VoiceChannelManagerHandler:
         try:
             await self.service.rename(channel, name)
         except UnmanagedCategory:
-            await self._attempt_send_message(
+            content = Localization.get_command_response(
                 interaction,
-                "You cannot rename this channel.",
+                "unmanaged_category",
+                "{channel.mention} You cannot rename this channel.",
+                channel=channel,
             )
         except RateLimitExceeded:
-            await self._attempt_send_message(
+            content = Localization.get_command_response(
                 interaction,
-                "Failed to rename the channel. "
+                "rate_limit_exceeded",
+                "{channel.mention} Failed to rename the channel. "
                 "You can only rename a channel twice every 10 minutes.",
+                channel=channel,
             )
         else:
-            await self._attempt_send_message(
+            content = Localization.get_command_response(
                 interaction,
-                f"{channel.mention} Voice channel has been renamed.",
+                "success",
+                "{channel.mention} Voice channel has been renamed.",
+                channel=channel,
             )
+
+        await self._attempt_send_message(interaction, content)
 
     async def _get_user_channel(self, interaction: Interaction) -> VoiceChannel | None:
         member: Member = interaction.user  # type: ignore
         if not member.voice:
-            await self._attempt_send_message(
+            content = Localization.get_command_response(
                 interaction,
+                "not_in_voice",
                 "You must be in a voice channel to use this command.",
             )
-            return None
+            return await self._attempt_send_message(interaction, content)
         return member.voice.channel  # type: ignore
 
     async def _handle_channel_join(self, channel: VoiceChannel) -> None:

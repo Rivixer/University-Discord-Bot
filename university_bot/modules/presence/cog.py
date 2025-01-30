@@ -9,7 +9,7 @@ import nextcord
 from nextcord import ActivityType, SlashOption, Status
 from nextcord.ext import commands
 
-from university_bot import Interaction, catch_interaction_exceptions
+from university_bot import Interaction, Localization, catch_interaction_exceptions
 from university_bot.exceptions.cog import LoadCogError
 
 from .config import PresenceConfig
@@ -62,10 +62,12 @@ class PresenceCog(commands.Cog):
         self.handler = PresenceHandler(self.service)
         self.bot.loop.create_task(self.service.load_presence())
 
+    @Localization.apply_localizations
     @nextcord.slash_command(name="presence")
     async def _presence(self, *_) -> None:
         """Placeholder command for the presence command group."""
 
+    @Localization.apply_localizations
     @_presence.subcommand(name="set_status", description="Set the bot's status.")
     @catch_interaction_exceptions([PresenceException])
     async def _set_status(
@@ -79,6 +81,7 @@ class PresenceCog(commands.Cog):
     ) -> None:
         await self.handler.set_status(interaction, status)
 
+    @Localization.apply_localizations
     @_presence.subcommand(name="set_activity", description="Set the bot's activity.")
     @catch_interaction_exceptions([PresenceException])
     async def _set_activity(
@@ -90,13 +93,14 @@ class PresenceCog(commands.Cog):
             description="The type of the activity.",
             required=True,
         ),
-        activity: str = SlashOption(
+        text: str = SlashOption(
             description="The text to display in the activity.",
             required=True,
         ),
     ) -> None:
-        await self.handler.set_activity(interaction, type_, activity)
+        await self.handler.set_activity(interaction, type_, text)
 
+    @Localization.apply_localizations
     @_presence.subcommand(
         name="clear_activity",
         description="Clear the bot's activity.",

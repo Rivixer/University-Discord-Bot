@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 
 from nextcord import ActivityType, HTTPException, Status
 
-from university_bot import get_logger
+from university_bot import Localization, get_logger
 
 from .exceptions import InvalidEnumConversion
 
@@ -56,14 +56,21 @@ class PresenceHandler:
         """
         status_ = self._convert_to_enum(Status, status)
         await self.service.set_status(status_)
-        await self._attempt_send_success_message(
-            interaction, f"Status set to {status}."
+
+        content = Localization.get_command_response(
+            interaction,
+            "success",
+            "Status set to {status}.",
+            status=Localization.get_localized_choice_name(
+                interaction, "status", status
+            ),
         )
+        await self._attempt_send_success_message(interaction, content)
 
     async def set_activity(
         self,
         interaction: Interaction,
-        activity_type: str,
+        type_: str,
         text: str,
     ) -> None:
         """|coro|
@@ -74,7 +81,7 @@ class PresenceHandler:
         ----------
         interaction: :class:`nextcord.Interaction`
             The interaction.
-        activity_type: :class:`str`
+        type_: :class:`str`
             The type of the activity.
         text: :class:`str`
             The text of the activity.
@@ -86,11 +93,17 @@ class PresenceHandler:
         PresenceDataSaveFailed
             If saving the presence data to the file failed.
         """
-        activity_type_ = self._convert_to_enum(ActivityType, activity_type)
+        activity_type_ = self._convert_to_enum(ActivityType, type_)
         await self.service.set_activity(activity_type_, text)
-        await self._attempt_send_success_message(
-            interaction, f"Activity set to {activity_type} {text}."
+
+        content = Localization.get_command_response(
+            interaction,
+            "success",
+            "Activity set to {type} {text}.",
+            type=Localization.get_localized_choice_name(interaction, "type", type_),
+            text=text,
         )
+        await self._attempt_send_success_message(interaction, content)
 
     async def clear_activity(self, interaction: Interaction) -> None:
         """|coro|
@@ -108,7 +121,13 @@ class PresenceHandler:
             If saving the presence data to the file failed.
         """
         await self.service.clear_activity()
-        await self._attempt_send_success_message(interaction, "Activity cleared.")
+
+        content = Localization.get_command_response(
+            interaction,
+            "success",
+            "Activity cleared.",
+        )
+        await self._attempt_send_success_message(interaction, content)
 
     async def _attempt_send_success_message(
         self,
