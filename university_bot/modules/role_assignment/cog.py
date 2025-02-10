@@ -12,10 +12,10 @@ from pydantic import ValidationError
 
 from university_bot import Interaction, Localization, catch_interaction_exceptions
 from university_bot.exceptions.cog import LoadCogError
-from university_bot.exceptions.configuration_view import ContentTooLongError
+from university_bot.mixins.configuration import ConfigurationError
 
 from .config import RoleAssignmentConfig
-from .exceptions import InvalidConfiguration, RoleAssignmentError
+from .exceptions import RoleAssignmentError
 from .handler import RoleAssignmentHandler
 from .service import RoleAssignmentService
 
@@ -55,7 +55,7 @@ class RoleAssignmentCog(Cog):
 
         try:
             self.service = RoleAssignmentService(bot, self.config)
-        except InvalidConfiguration as e:
+        except ConfigurationError as e:
             raise LoadCogError(self, "Error while loading service.") from e
 
         self.handler = RoleAssignmentHandler(self.service)
@@ -80,7 +80,7 @@ class RoleAssignmentCog(Cog):
         name="get_configuration",
         description="Get the configuration of the role assignment.",
     )
-    @catch_interaction_exceptions([RoleAssignmentError])
+    @catch_interaction_exceptions([RoleAssignmentError, ConfigurationError])
     async def _get_configuration(self, interaction: Interaction) -> None:
         await self.handler.get_configuration(interaction)
 
@@ -89,7 +89,7 @@ class RoleAssignmentCog(Cog):
         name="set_configuration",
         description="Set the configuration of the role assignment.",
     )
-    @catch_interaction_exceptions([RoleAssignmentError])
+    @catch_interaction_exceptions([RoleAssignmentError, ConfigurationError])
     async def _set_configuration(
         self,
         interaction: Interaction,
@@ -104,7 +104,7 @@ class RoleAssignmentCog(Cog):
         name="edit_configuration",
         description="Edit the configuration of the role assignment.",
     )
-    @catch_interaction_exceptions([RoleAssignmentError, ContentTooLongError])
+    @catch_interaction_exceptions([RoleAssignmentError, ConfigurationError])
     async def _edit_configuration(
         self,
         interaction: Interaction,

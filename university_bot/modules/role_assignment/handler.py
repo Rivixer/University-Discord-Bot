@@ -4,32 +4,19 @@
 from __future__ import annotations
 
 import asyncio
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, override
 
-from nextcord import (
-    File,
-    Forbidden,
-    HTTPException,
-    InteractionResponded,
-    InvalidArgument,
-    NotFound,
-)
+from nextcord import Forbidden, HTTPException, InvalidArgument, NotFound
 from nextcord.utils import MISSING
 
-from university_bot import InteractionUtils, catch_interaction_exceptions, get_logger
-from university_bot.views.configuration import EditConfigurationModal
+from university_bot import InteractionUtils, get_logger
 
-from .exceptions import (
-    ConfigurationSaveFailed,
-    ConfigurationUpdateError,
-    InvalidConfiguration,
-    RoleAssignmentError,
-    RoleAssignmentFailed,
-)
+from .exceptions import RoleAssignmentError, RoleAssignmentFailed
 from .views import RoleSelectView
+from ...mixins.configuration import ConfigurationHandlerMixin, SaveConfigurationFailed
 
 if TYPE_CHECKING:
-    from nextcord import Attachment, Guild, Member, Message, Role
+    from nextcord import Guild, Member, Message, Role
 
     from university_bot import Interaction
 
@@ -40,7 +27,7 @@ if TYPE_CHECKING:
 _logger = get_logger(__name__)
 
 
-class RoleAssignmentHandler:
+class RoleAssignmentHandler(ConfigurationHandlerMixin):
     """A class to handle the role assignment commands.
 
     Attributes
@@ -53,6 +40,12 @@ class RoleAssignmentHandler:
 
     def __init__(self, service: RoleAssignmentService) -> None:
         self.service = service
+        super().__init__(service, _logger)
+
+    @override
+    async def _apply_configuration_updates(self, content: str) -> None:
+        await super()._apply_configuration_updates(content)
+        await self.service.reload_view(self)
 
     async def send_message(self, interaction: Interaction, preview: bool) -> None:
         """|coro|
@@ -83,8 +76,8 @@ class RoleAssignmentHandler:
             ) from e
 
         try:
-            message_data = self.service.prepare_message_data(
-                self, missing=preview
+            message_data = (
+                await self.service.prepare_message_data(self, missing=preview)
             ).to_dict()
 
             if preview:
@@ -95,7 +88,7 @@ class RoleAssignmentHandler:
 
             try:
                 self.service.update_message_data(message)
-            except ConfigurationSaveFailed as e:
+            except SaveConfigurationFailed as e:
                 _logger.error(
                     "Failed to save message data for message %s on channel %s. "
                     "Trying to delete message.",
@@ -121,113 +114,6 @@ class RoleAssignmentHandler:
             channel_id,
             message.id,
         )
-
-    async def get_configuration(self, interaction: Interaction) -> None:
-        """|coro|
-
-        Handles sending the current configuration file.
-
-        Parameters
-        ----------
-        interaction: :class:`nextcord.Interaction`
-            The interaction that triggered the command.
-
-        Raises
-        ------
-        RoleAssignmentError
-            - If getting the configuration file fails.
-            - If sending the message with the configuration file fails.
-        """
-        try:
-            file = File(self.service.config.data_filepath)
-        except FileNotFoundError as e:
-            _logger.error("Failed to get configuration file. %s", e)
-            raise RoleAssignmentError("Failed to get configuration file.") from e
-
-        try:
-            await interaction.response.send_message(file=file, ephemeral=True)
-        except HTTPException as e:
-            _logger.error("Failed to send configuration file. %s", e, exc_info=True)
-            raise RoleAssignmentError("Failed to send configuration file.") from e
-
-    async def set_configuration(
-        self,
-        interaction: Interaction,
-        attachment: Attachment,
-    ) -> None:
-        """|coro|
-
-        Handles setting a new configuration from an attachment.
-
-        Parameters
-        ----------
-        interaction: :class:`nextcord.Interaction`
-            The interaction that triggered the command.
-        attachment: :class:`nextcord.Attachment`
-            The attachment containing the new configuration.
-
-        Raises
-        ------
-        ConfigurationUpdateError
-            - If reading the attachment fails.
-            - If applying the configuration updates fails.
-        """
-        try:
-            content = await attachment.read()
-            content = content.decode("utf-8")
-        except HTTPException as e:
-            _logger.error(
-                "Failed to read attachment %s. %s", attachment.id, e, exc_info=True
-            )
-            raise ConfigurationUpdateError("Failed to read attachment.") from e
-
-        await self._apply_configuration_updates(content)
-        await self._attempt_send_set_configuration_success_message(interaction)
-
-    async def edit_configuration(self, interaction: Interaction, indent: int) -> None:
-        """|coro|
-
-        Handles the interaction for editing configuration.
-
-        Parameters
-        ----------
-        interaction: :class:`nextcord.Interaction`
-            The interaction that triggered the command.
-        indent: :class:`int`
-            The indentation level for the JSON content.
-
-        Raises
-        ------
-        ContentTooLongError
-            If the content is too long to be displayed in a TextInput.
-
-        RoleAssignmentError
-            - If getting the config content fails.
-            - If sending the modal fails.
-            - If validating the configuration fails.
-            - If saving the configuration updates fails.
-        """
-        try:
-            content = self.service.get_config_content(indent)
-        except (FileNotFoundError, ValueError) as e:
-            _logger.error("Failed to get config content. %s", e)
-            raise ConfigurationUpdateError("Failed to get config content.") from e
-
-        @catch_interaction_exceptions([RoleAssignmentError])
-        async def callback(
-            _: EditConfigurationModal,
-            interaction: Interaction,
-            content: str,
-        ) -> None:
-            await self._apply_configuration_updates(content)
-            await self._attempt_send_set_configuration_success_message(interaction)
-
-        modal = EditConfigurationModal(content=content, callback_fn=callback)
-
-        try:
-            await interaction.response.send_modal(modal)
-        except (HTTPException, InteractionResponded) as e:
-            raise RoleAssignmentError("Failed to send modal.") from e
 
     async def handle_node_selection(
         self,
@@ -377,36 +263,36 @@ class RoleAssignmentHandler:
                 f"Original error: {original_error}, Delete error: {e}"
             ) from e
 
-    async def _attempt_send_set_configuration_success_message(
-        self, interaction: Interaction
-    ) -> None:
-        send_message = (
-            interaction.followup.send
-            if interaction.response.is_done()
-            else interaction.response.send_message
-        )
+    # async def _attempt_send_set_configuration_success_message(
+    #     self, interaction: Interaction
+    # ) -> None:
+    #     send_message = (
+    #         interaction.followup.send
+    #         if interaction.response.is_done()
+    #         else interaction.response.send_message
+    #     )
 
-        try:
-            await send_message("Configuration updated successfully.", ephemeral=True)
-        except HTTPException as e:
-            _logger.error(
-                "Failed to send success message for configuration update to %s. %s",
-                interaction.user.id if interaction.user else "Unknown",
-                e,
-                exc_info=True,
-            )
+    #     try:
+    #         await send_message("Configuration updated successfully.", ephemeral=True)
+    #     except HTTPException as e:
+    #         _logger.error(
+    #             "Failed to send success message for configuration update to %s. %s",
+    #             interaction.user.id if interaction.user else "Unknown",
+    #             e,
+    #             exc_info=True,
+    #         )
 
-    async def _apply_configuration_updates(self, content: str) -> None:
-        try:
-            await self.service.validate_and_save_data(content)
-        except (InvalidConfiguration, ConfigurationSaveFailed) as e:
-            _logger.error(
-                "Failed to save configuration updates. %s",
-                e,
-                exc_info=True,
-            )
-            raise ConfigurationUpdateError(
-                "Failed to save configuration updates."
-            ) from e
+    # async def _apply_configuration_updates(self, content: str) -> None:
+    #     try:
+    #         await self.service.validate_and_save_data(content)
+    #     except (InvalidConfiguration, ConfigurationSaveFailed) as e:
+    #         _logger.error(
+    #             "Failed to save configuration updates. %s",
+    #             e,
+    #             exc_info=True,
+    #         )
+    #         raise ConfigurationUpdateError(
+    #             "Failed to save configuration updates."
+    #         ) from e
 
-        await self.service.reload_view(self)
+    #     await self.service.reload_view(self)

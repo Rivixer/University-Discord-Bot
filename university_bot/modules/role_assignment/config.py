@@ -3,12 +3,14 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, override
 
 from nextcord import ButtonStyle, Color, Embed
 from pydantic import BaseModel, ConfigDict, field_validator, model_validator
 
+from university_bot.mixins.static_message import StaticMessageDataConfig
 from university_bot.utils2 import ConfigUtils
 
 if TYPE_CHECKING:
@@ -41,7 +43,7 @@ class RoleAssignmentConfig(BaseModel):
 
 
 @ConfigUtils.auto_model_dump
-class RoleAssignmentDataConfig(BaseModel):
+class RoleAssignmentDataConfig(StaticMessageDataConfig):
     """The data configuration of the role assignment."""
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
@@ -57,6 +59,12 @@ class RoleAssignmentDataConfig(BaseModel):
         super().__init__(**data)
         if self.version != "1.0":
             raise ValueError(f"Unsupported configuration version: {self.version}")
+
+    @override
+    @staticmethod
+    def load(path: Path | str) -> RoleAssignmentDataConfig:
+        with open(path, "r", encoding="utf-8") as f:
+            return RoleAssignmentDataConfig(**json.load(f))
 
     @field_validator("embed", mode="before")
     @classmethod
