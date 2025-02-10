@@ -262,37 +262,3 @@ class RoleAssignmentHandler(ConfigurationHandlerMixin):
                 "Failed to delete message after save failure. "
                 f"Original error: {original_error}, Delete error: {e}"
             ) from e
-
-    # async def _attempt_send_set_configuration_success_message(
-    #     self, interaction: Interaction
-    # ) -> None:
-    #     send_message = (
-    #         interaction.followup.send
-    #         if interaction.response.is_done()
-    #         else interaction.response.send_message
-    #     )
-
-    #     try:
-    #         await send_message("Configuration updated successfully.", ephemeral=True)
-    #     except HTTPException as e:
-    #         _logger.error(
-    #             "Failed to send success message for configuration update to %s. %s",
-    #             interaction.user.id if interaction.user else "Unknown",
-    #             e,
-    #             exc_info=True,
-    #         )
-
-    # async def _apply_configuration_updates(self, content: str) -> None:
-    #     try:
-    #         await self.service.validate_and_save_data(content)
-    #     except (InvalidConfiguration, ConfigurationSaveFailed) as e:
-    #         _logger.error(
-    #             "Failed to save configuration updates. %s",
-    #             e,
-    #             exc_info=True,
-    #         )
-    #         raise ConfigurationUpdateError(
-    #             "Failed to save configuration updates."
-    #         ) from e
-
-    #     await self.service.reload_view(self)
