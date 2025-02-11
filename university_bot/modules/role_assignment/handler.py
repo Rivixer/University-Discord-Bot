@@ -76,9 +76,9 @@ class RoleAssignmentHandler(ConfigurationHandlerMixin):
             ) from e
 
         try:
-            message_data = (
-                await self.service.prepare_message_data(self, missing=preview)
-            ).to_dict()
+            message_data = await self.service.prepare_message_data(
+                self, missing=preview
+            )
 
             if preview:
                 await interaction.followup.send(**message_data, ephemeral=True)

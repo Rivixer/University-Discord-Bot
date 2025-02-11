@@ -6,6 +6,7 @@ from __future__ import annotations
 import json
 import os
 from abc import ABC, abstractmethod
+from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -77,7 +78,7 @@ class DataConfigBaseModel(BaseModel, ABC):
 
 
 @dataclass(slots=True)
-class MessageData[E: Embed | None, V: View | None]:
+class MessageData[E: Embed | None, V: View | None](Mapping[str, Any]):
     """Data for sending a message.
 
     Attributes
@@ -94,10 +95,11 @@ class MessageData[E: Embed | None, V: View | None]:
     embed: E | None
     view: V | None
 
-    def to_dict(self) -> dict[str, Any]:
-        """Returns the data as a dictionary."""
-        return {
-            "content": self.content,
-            "embed": self.embed,
-            "view": self.view,
-        }
+    def __getitem__(self, key: str) -> Any:
+        return getattr(self, key)
+
+    def __iter__(self):
+        return iter(self.__dataclass_fields__)
+
+    def __len__(self) -> int:
+        return len(self.__dataclass_fields__)

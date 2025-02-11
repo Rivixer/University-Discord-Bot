@@ -222,7 +222,7 @@ class StaticMessageMixin[HandlerT, DataT: StaticMessageDataConfig](ABC):
         message_data = await self.prepare_message_data(handler)
 
         try:
-            await message.edit(**message_data.to_dict())
+            await message.edit(**message_data)
         except HTTPException as e:
             self.__logger.error("Failed to refresh message: %s", e)
             raise e  # TODO: Consider raising a custom exception
@@ -308,7 +308,7 @@ class StaticViewMixin[HandlerT, ViewT: View, DataT: StaticMessageDataConfig](
         message_data = await self.prepare_message_data(handler)
 
         try:
-            await message.edit(**message_data.to_dict())
+            await message.edit(**message_data)
         except HTTPException as e:
             self.__logger.error("Failed to edit view message: %s", e)
         else:
