@@ -1,5 +1,28 @@
 {
     "commands": {
+        "/calendar": {
+            "name": "kalendarz",
+            "/send": {
+                "name": "wyślij",
+                "#description": "Wyślij wiadomość z kalendarzem."
+            },
+            "/menu": {
+                "name": "menu",
+                "#description": "Wyświetl menu kalendarza."
+            },
+            "/get_configuration": {
+                "name": "pobierz_konfiguracje",
+                "description": "Pobierz konfigurację kalendarza."
+            },
+            "/set_configuration": {
+                "name": "ustaw_konfiguracje",
+                "description": "Ustaw konfigurację kalendarza."
+            },
+            "/edit_configuration": {
+                "name": "edytuj_konfiguracje",
+                "description": "Edytuj konfigurację kalendarza."
+            }
+        },
         "/presence": {
             "name": "obecność",
             "/set_status": {
@@ -57,8 +80,8 @@
         "/role_assignment": {
             "name": "przypisanie_ról",
             "/send": {
-                "name": "wyslij",
-                "#description": "Wyślij wiadomość z przypisanymi rolami."
+                "name": "wyślij",
+                "#description": "Wyślij wiadomość do przypisania ról."
             },
             "/get_configuration": {
                 "name": "pobierz_konfiguracje",
@@ -113,6 +136,130 @@
                     "unmanaged_category": "{channel.mention} Nie możesz zmienić nazwy tego kanału głosowego.",
                     "rate_limit_exceeded": "{channel.mention} Zmiana nazwy nie powiodła się.\nMożesz zmienić nazwę kanału głosowego maksymalnie 2 razy na 10 minut (ograniczenia Discorda).",
                     "success": "{channel.mention} Nazwa kanału głosowego została zmieniona."
+                }
+            }
+        }
+    },
+    "ui": {
+        "calendar": {
+            "embeds": {
+                "menu": {
+                    "title": "Menu kalendarza",
+                    "description": "Wybierz jedną z opcji, aby zarządzać kalendarzem.",
+                    "fields": {
+                        "add_event": {
+                            "name": "Utwórz",
+                            "value": "Utwórz nowe wydarzenie w kalendarzu."
+                        },
+                        "summary": {
+                            "name": "Podsumowanie",
+                            "value": "Wyświetl i zarządzaj wydarzeniami w kalendarzu."
+                        }
+                    }
+                },
+                "event": {
+                    "titles": {
+                        "add": "Utwórz wydarzenie",
+                        "edit": "Edytuj wydarzenie",
+                        "copy": "Kopiuj wydarzenie",
+                        "summary": "Podgląd wydarzenia"
+                    },
+                    "fields": {
+                        "description": {
+                            "name": "Opis:"
+                        },
+                        "date": {
+                            "name": "Data:"
+                        },
+                        "time": {
+                            "name": "Godzina:"
+                        },
+                        "prefix": {
+                            "name": "Prefiks:"
+                        },
+                        "location": {
+                            "name": "Lokalizacja:"
+                        },
+                        "is_hidden": {
+                            "name": "Ukryte:",
+                            "yes": "Tak",
+                            "no": "Nie"
+                        }
+                    },
+                    "other": {
+                        "required": "wymagane"
+                    }
+                },
+                "timeout": {
+                    "title": "Przekroczono limit czasu",
+                    "description": "Nie udało się zakończyć operacji w wyznaczonym czasie."
+                }
+            },
+            "views": {
+                "menu": {
+                    "buttons": {
+                        "add_event": "Utwórz wydarzenie",
+                        "summary": "Podsumowanie"
+                    }
+                },
+                "event": {
+                    "buttons": {
+                        "information": "Informacje",
+                        "reminder": "Przypomnienie",
+                        "show": "Pokaż",
+                        "hide": "Ukryj",
+                        "save": "Zapisz",
+                        "cancel": "Anuluj"
+                    },
+                    "messages": {
+                        "add": {
+                            "success": "Wydarzenie zostało dodane."
+                        },
+                        "edit": {
+                            "success": "Wydarzenie zostało zaktualizowane."
+                        },
+                        "copy": {
+                            "success": "Wydarzenie zostało skopiowane."
+                        }
+                    }
+                },
+                "summary": {
+                    "buttons": {
+                        "edit": "Edytuj",
+                        "copy": "Kopiuj",
+                        "delete": "Usuń",
+                        "return": "Powrót"
+                    },
+                    "messages": {
+                        "delete": {
+                            "success": "Wydarzenie zostało usunięte."
+                        }
+                    }
+                }
+            },
+            "modals": {
+                "event_information": {
+                    "title": "Informacje o wydarzeniu",
+                    "text_inputs": {
+                        "description": {
+                            "label": "Opis:",
+                            "placeholder": "Opis wydarzenia"
+                        },
+                        "date": {
+                            "label": "Data:"
+                        },
+                        "time": {
+                            "label": "Godzina:"
+                        },
+                        "prefix": {
+                            "label": "Prefiks:",
+                            "placeholder": "Prefiks wydarzenia"
+                        },
+                        "location": {
+                            "label": "Lokalizacja:",
+                            "placeholder": "Lokalizacja wydarzenia"
+                        }
+                    }
                 }
             }
         }

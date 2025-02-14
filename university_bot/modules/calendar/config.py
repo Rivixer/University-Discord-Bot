@@ -1,0 +1,270 @@
+# SPDX-License-Identifier: MIT
+"""A module to define the configuration models for the calendar."""
+
+from __future__ import annotations
+
+import datetime
+import json
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, Final, override
+
+from babel.core import Locale, UnknownLocaleError
+from babel.dates import format_date, format_time, parse_date, parse_time
+from nextcord import Color, Embed
+from pydantic import BaseModel, ConfigDict, ValidationInfo, field_validator
+
+from university_bot.mixins.static_message import StaticMessageDataConfig
+from university_bot.utils2 import ConfigUtils
+
+if TYPE_CHECKING:
+
+    from university_bot import EmbedDict
+
+__all__ = (
+    "CalendarConfig",
+    "CalendarDataConfig",
+    "EventFieldLimits",
+    "EventReprFormat",
+)
+
+
+class EventFieldLimits:  # pylint: disable=too-few-public-methods
+    """Constants for character limits in event fields."""
+
+    DESCRIPTION: Final[int] = 384
+    PREFIX: Final[int] = 64
+    LOCATION: Final[int] = 512
+
+
+class CalendarConfig(BaseModel):
+    """The calendar configuration."""
+
+    enabled: bool = True
+    data_filepath: Path
+
+    @field_validator("data_filepath", mode="before")
+    @classmethod
+    def _validate_data_filepath(cls, value: str | Path) -> Path:
+        path = Path(value) if not isinstance(value, Path) else value
+        ConfigUtils.validate_data_filepath(path, ".json")
+        return path
+
+
+class EventReprFormat(BaseModel):
+    """The format of the event representation."""
+
+    indent: str = "- "
+    prefix: str = "[{prefix}] "
+    description: str = "**{description}**"
+    time: str = " ({time})"
+    location: str = " [{location}]"
+
+
+@ConfigUtils.auto_model_dump
+class CalendarDataConfig(StaticMessageDataConfig):
+    """The data configuration of the calendar."""
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    version: str = "1.0"
+    message_id: int | None
+    channel_id: int | None
+    content: str | None = None
+    locale: str = "en"
+    date_input_format: str = "dd.MM.yyyy"
+    date_repr_format: str = "dd.MM.yyyy (EEEE)"
+    time_input_format: str = "HH.mm"
+    time_repr_format: str = "HH:mm"
+    event_repr_format: EventReprFormat = EventReprFormat()
+    embed: Embed
+
+    def __init__(self, **data: Any):
+        super().__init__(**data)
+        if self.version != "1.0":
+            raise ValueError(f"Unsupported configuration version: {self.version}")
+
+    @override
+    @staticmethod
+    def load(path: Path | str) -> CalendarDataConfig:
+        with open(path, "r", encoding="utf-8") as f:
+            return CalendarDataConfig(**json.load(f))
+
+    @field_validator("locale", mode="before")
+    @classmethod
+    def _validate_locale(cls, value: str) -> str:
+        try:
+            Locale.parse(value)
+        except UnknownLocaleError as e:
+            raise ValueError(f"Invalid locale: {value}") from e
+        return value
+
+    @field_validator("date_input_format", mode="after")
+    @staticmethod
+    def _validate_date_input_format(value: str, info: ValidationInfo) -> str:
+        locale = info.data.get("locale", "en")
+        sample_date = datetime.date.today()
+        format_date(sample_date, format=value, locale=locale)
+        return value
+
+    @field_validator("date_repr_format", mode="after")
+    @staticmethod
+    def _validate_date_repr_format(value: str, info: ValidationInfo) -> str:
+        locale = info.data.get("locale", "en")
+        sample_date = datetime.date.today()
+        format_date(sample_date, format=value, locale=locale)
+        return value
+
+    @field_validator("time_input_format", mode="after")
+    @staticmethod
+    def _validate_time_input_format(value: str, info: ValidationInfo) -> str:
+        locale = info.data.get("locale", "en")
+        sample_time = datetime.datetime.now().time()
+        format_time(sample_time, format=value, locale=locale)
+        return value
+
+    @field_validator("time_repr_format", mode="after")
+    @staticmethod
+    def _validate_time_repr_format(value: str, info: ValidationInfo) -> str:
+        locale = info.data.get("locale", "en")
+        sample_time = datetime.datetime.now().time()
+        format_time(sample_time, format=value, locale=locale)
+        return value
+
+    @field_validator("embed", mode="before")
+    @classmethod
+    def _validate_embed(cls, value: Embed | EmbedDict) -> Embed | None:
+        embed = Embed.from_dict(value) if isinstance(value, dict) else value
+
+        if embed.fields:
+            raise ValueError(
+                "Fields are reserved for events. Do not use them in the embed."
+            )
+
+        return embed
+
+    @override
+    def model_dump(self, *args: Any, **kwargs: Any) -> dict[str, Any]:
+        data = super().model_dump(*args, **kwargs)
+        if data.get("embed"):
+            data["embed"] = data["embed"].to_dict()
+
+        try:
+            del data["embed"]["fields"]
+        except KeyError:
+            pass
+
+        return data
+
+    def format_input_date(self, date: datetime.date) -> str:
+        """Formats the input date.
+
+        Parameters
+        ----------
+        date: :class:`datetime.date`
+            The date to format.
+
+        Returns
+        -------
+        :class:`str`
+            The formatted date.
+        """
+        return format_date(date, format=self.date_input_format, locale=self.locale)
+
+    def format_repr_date(self, date: datetime.date) -> str:
+        """Formats the representation date.
+
+        Parameters
+        ----------
+        date: :class:`datetime.date`
+            The date to format.
+
+        Returns
+        -------
+        :class:`str`
+            The formatted date.
+        """
+        return format_date(date, format=self.date_repr_format, locale=self.locale)
+
+    def parse_input_date(self, date: str) -> datetime.date:
+        """Parses the input date.
+
+        Parameters
+        ----------
+        date: :class:`str`
+            The date to parse.
+
+        Returns
+        -------
+        :class:`datetime.date`
+            The parsed date.
+
+        Raises
+        ------
+        ValueError | IndexError
+            If the date could not be parsed.
+        """
+        return parse_date(date, format=self.date_input_format, locale=self.locale)
+
+    def format_input_time(self, time: datetime.time) -> str:
+        """Formats the input time.
+
+        Parameters
+        ----------
+        time: :class:`datetime.time`
+            The time to format.
+
+        Returns
+        -------
+        :class:`str`
+            The formatted time.
+        """
+        return format_time(time, format=self.time_input_format, locale=self.locale)
+
+    def format_repr_time(self, time: datetime.time) -> str:
+        """Formats the representation time.
+
+        Parameters
+        ----------
+        time: :class:`datetime.time`
+            The time to format.
+
+        Returns
+        -------
+        :class:`str`
+            The formatted time.
+        """
+        return format_time(time, format=self.time_repr_format, locale=self.locale)
+
+    def parse_input_time(self, time: str) -> datetime.time:
+        """Parses the input time.
+
+        Parameters
+        ----------
+        time: :class:`str`
+            The time to parse.
+
+        Returns
+        -------
+        :class:`datetime.time`
+            The parsed time.
+
+        Raises
+        ------
+        ValueError | IndexError
+            If the time could not be parsed.
+        """
+        return parse_time(time, format=self.time_input_format, locale=self.locale)
+
+    @staticmethod
+    def get_example() -> CalendarDataConfig:
+        """Returns an example of the data configuration."""
+        return CalendarDataConfig(
+            message_id=None,
+            channel_id=None,
+            content=None,
+            embed=Embed(
+                title="Calendar",
+                description="This is a calendar.",
+                color=Color.blurple(),
+            ),
+        )
