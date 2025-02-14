@@ -11,14 +11,14 @@ from university_bot import UniversityBot
 class Cog(commands.Cog):
     def __init__(self, bot: UniversityBot) -> None:
         self.bot = bot
-
-def setup(bot: UniversityBot) -> None:
-    bot.add_cog(Cog(bot))
-    ```
+```
 """
 
 from __future__ import annotations
 
+import asyncio
+import importlib
+import inspect
 import logging
 import os
 import sys
@@ -29,18 +29,23 @@ from typing import TYPE_CHECKING
 import dotenv
 import nextcord
 from nextcord import TextChannel
-from nextcord.ext.commands import Bot, ExtensionError
+from nextcord.ext.commands import Bot, Cog, ExtensionError
 from nextcord.flags import Intents
 from nextcord.guild import Guild
 from pydantic_core import ValidationError
 
+from university_bot.exceptions.cog import LoadCogError
+from university_bot.mixins.cog import SetupMixin
+from university_bot.utils.exceptions import format_exception_chain
 from university_bot.utils.localization import Localization
 
 from .config import BasicConfig, ConfigLoader, TemporaryFilesConfig
+from .database import DatabaseConfig, DatabaseController
 from .utils.logger import configure_logger
 
 if TYPE_CHECKING:
     from university_bot.config import BotConfig
+
 
 __all__ = ("UniversityBot",)
 
@@ -54,10 +59,12 @@ class UniversityBot(Bot):
     """
 
     _config: BotConfig
+    _database_config: DatabaseConfig
     _logger: logging.Logger
     _bot_channel: TextChannel
     _guild: Guild
     _cogs_loaded: bool
+    _database: DatabaseController
 
     def __init__(self) -> None:
         self._cogs_loaded = False
@@ -80,6 +87,8 @@ class UniversityBot(Bot):
 
         Localization.load(self._basic_config.localization)
 
+        self._database = DatabaseController(self._config.database)
+
         super().__init__(
             intents=Intents.all(),
             case_insensitive=True,
@@ -87,6 +96,12 @@ class UniversityBot(Bot):
         )
 
     async def on_connect(self) -> None:
+        try:
+            await self._database.connect()
+        except RuntimeError:
+            self._logger.critical("Database connection failed!", exc_info=True)
+            sys.exit(1)
+
         await self._set_guild()
         await self.wait_until_ready()
         await self._set_bot_channel()
@@ -126,6 +141,11 @@ class UniversityBot(Bot):
     def bot_channel(self, channel: TextChannel) -> None:
         self._bot_channel = channel
 
+    @property
+    def database(self) -> DatabaseController:
+        """The database controller instance."""
+        return self._database
+
     async def _set_bot_channel(self) -> None:
         channel_id = self._basic_config.bot_channel_id
         channel = self._guild.get_channel(channel_id)
@@ -159,64 +179,101 @@ class UniversityBot(Bot):
             self._logger.warning("Cogs have already been loaded.")
             return
 
-        self._logger.info("Loading cogs.")
+        self._logger.info("Loading cogs...")
 
         modules_path = Path("university_bot/modules")
+        if not modules_path.exists():
+            self._logger.error("Modules path does not exist: %s", modules_path)
+            return
+
+        cogs_to_load: list[tuple[str, str]] = []
 
         for module_name in os.listdir(modules_path):
             module_path = modules_path / module_name
-            cog_path = module_path / "cog.py"
 
-            if not cog_path.exists():
+            if module_name.startswith("_") or not module_path.is_dir():
+                continue
+
+            cog_file = module_path / "cog.py"
+
+            if not cog_file.is_file():
                 self._logger.warning(
-                    "Cog file for '%s' module is missing, skipping.",
+                    "Cog file for module '%s' is missing, skipping.",
                     module_name,
                 )
                 continue
 
             cog_config = self.config.get(module_name)
-
-            if cog_config is None:
+            if not cog_config:
                 self._logger.warning(
-                    "Config for '%s' cog is missing, skipping.",
+                    "Config for cog '%s' is missing, skipping.",
                     module_name,
                 )
                 continue
 
-            if (enabled := cog_config["enabled"]) is None:
-                self._logger.warning(
-                    "enabled key for %s cog is missing, loading anyway.",
+            enabled = cog_config.get("enabled", True)
+            if not enabled:
+                self._logger.info(
+                    "Cog '%s' is disabled in configuration, skipping.",
                     module_name,
                 )
-                enabled = True
-
-            if not enabled:
                 continue
 
             cog_import_path = f"university_bot.modules.{module_name}.cog"
-            self.load_cog(cog_import_path, module_name)
+            cogs_to_load.append((cog_import_path, module_name))
+
+        if not cogs_to_load:
+            self._logger.info("No cogs to load.")
+            self._cogs_loaded = True
+            return
+
+        tasks = [self.load_cog(import_path, name) for import_path, name in cogs_to_load]
+        await asyncio.gather(*tasks)
 
         self._logger.info("Cogs loaded.")
         self._cogs_loaded = True
 
-    def load_cog(self, name: str, display_name: str | None = None) -> bool:
+    async def load_cog(self, name: str, display_name: str | None = None) -> bool:
         """Loads the cog.
 
         Parameters
         ----------
-        display_name : str
+        display_name: :class:`str`
             The name of the cog to display.
             If not provided, the name will be used.
 
         Returns
         -------
-        bool
+        :class:`bool`
             Whether the cog has been loaded successfully.
         """
         start_time = time.time()
 
         try:
-            self.load_extension(name)
+            module = importlib.import_module(name)
+            cog_class = next(
+                (
+                    cls
+                    for cls in vars(module).values()
+                    if inspect.isclass(cls) and issubclass(cls, Cog) and cls is not Cog
+                ),
+                None,
+            )
+
+            if cog_class is None:
+                self._logger.error(
+                    "Cog '%s' couldn't be loaded! Cog class not found.",
+                    display_name or name,
+                )
+                return False
+
+            cog = cog_class(self)
+
+            if isinstance(cog, SetupMixin):
+                await cog.setup(self)
+
+            self.add_cog(cog)
+
             load_time = (time.time() - start_time) * 1000
             self._logger.info(
                 "Cog '%s' has been loaded! (%.2fms)", display_name or name, load_time
@@ -224,21 +281,18 @@ class UniversityBot(Bot):
             return True
         except (
             ImportError,
-            ExtensionError,
-            ModuleNotFoundError,
-            nextcord.errors.HTTPException,
+            TypeError,
+            AttributeError,
+            RuntimeError,
+            LoadCogError,
+            nextcord.DiscordException,
         ) as e:
-            if isinstance(e, ExtensionError):
-                if isinstance(e.__cause__, ValidationError):
-                    e = e.__cause__
-
             self._logger.error(
                 "Cog '%s' couldn't be loaded! %s",
-                display_name or name,
-                e.__cause__ if isinstance(e, ExtensionError) else e,
+                display_name,
+                format_exception_chain(e, sep="\n"),
                 exc_info=True,
             )
-
             return False
 
     def unload_cog(self, name: str, display_name: str | None = None) -> bool:
@@ -246,15 +300,15 @@ class UniversityBot(Bot):
 
         Parameters
         ----------
-        name : str
+        name: :class:`str`
             The name of the cog to unload.
-        display_name : str
+        display_name: :class:`str`
             The name of the cog to display.
             If not provided, the name will be used.
 
         Returns
         -------
-        bool
+        :class:`bool`
             Whether the cog has been unloaded successfully.
         """
         start_time = time.time()
@@ -284,12 +338,12 @@ class UniversityBot(Bot):
 
         Parameters
         ----------
-        cog_name : str
+        cog_name: :class:`str`
             The name of the cog to reload.
 
         Returns
         -------
-        bool
+        :class:`bool`
             Whether the cog has been reloaded successfully.
         """
         start_time = time.time()
@@ -328,4 +382,5 @@ class UniversityBot(Bot):
         finally:
             if self.temporary_files_config.clear_on_shutdown:
                 self.temporary_files_config.clear()
+
             self._logger.info("Bot has been stopped!")

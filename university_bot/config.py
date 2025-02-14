@@ -14,6 +14,7 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_valida
 
 from university_bot.utils2 import ConfigUtils
 
+from .database import DatabaseConfig
 from .exceptions.configuration import ConfigurationLoadError, ConfigurationNotLoaded
 
 __all__ = (
@@ -39,6 +40,7 @@ class BotConfig(BaseModel):
 
     version: tuple[int, int, int] = (1, 0, 0)
     basic: BasicConfig
+    database: DatabaseConfig
     _data: dict[str, Any]
 
     def __init__(self, **data: Any) -> None:

@@ -20,6 +20,15 @@ traceback_in_console = false  # Show traceback in the console.
 directory = "locales"    # Directory for localization files.
 enabled_locales = ["pl"]  # Enabled locales.
 
+[database]
+type = "sqlite"          # Options: "mysql", "postgresql", "sqlite".
+host = ""                # Database host address.
+port = 0                 # Database port.
+name = "database.db"     # Database name (file path for SQLite).
+username = ""            # Database username.
+password = ""            # Database password.
+connection_setup_queries = []  # Additional queries to run when connecting to the database.
+
 [presence]
 enabled = true            # Enable presence module.
 data_filepath = "data/presence.json"  # Path to the presence data file (must be a JSON file).

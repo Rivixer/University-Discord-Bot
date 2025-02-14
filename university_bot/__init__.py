@@ -24,12 +24,11 @@ __version__ = "1.0.0.alpha"
 
 from .bot import *
 from .config import *
-from .console import *
-from .errors import *
+from .console import *  # TODO: To be removed in the future.
+from .errors import *  # TODO: To be removed in the future. Maybe.
+from .models import *
 from .types import *
 from .utils import *
-
-# TODO: Temporary import for backwards compatibility with the old utils module.
-from .utils2 import *
+from .utils2 import *  # TODO: Temporary import for backwards compatibility with the old utils module.
 
 __path__ = __import__("pkgutil").extend_path(__path__, __name__)
