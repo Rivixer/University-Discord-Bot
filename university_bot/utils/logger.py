@@ -13,7 +13,14 @@ from colorama import Fore, Style
 
 from ..config import LoggerConfig
 
-__all__ = ("get_logger", "PhraseFilter")
+__all__ = (
+    "LoggerFormatter",
+    "ConsoleLoggerFormatter",
+    "FileLoggerFormatter",
+    "configure_logger",
+    "get_logger",
+    "PhraseFilter",
+)
 
 
 class LoggerFormatter(logging.Formatter, ABC):

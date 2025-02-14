@@ -10,7 +10,8 @@ from typing import TYPE_CHECKING, Concatenate
 
 from nextcord import HTTPException, NotFound
 
-from university_bot import PhraseFilter, get_logger, get_voice_channel_by_name
+from university_bot import PhraseFilter, get_logger
+from university_bot.utils import get_voice_channel_by_name
 
 from .exceptions import (
     InvalidConfiguration,

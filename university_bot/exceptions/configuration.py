@@ -4,6 +4,7 @@
 __all__ = (
     "ConfigurationError",
     "ConfigurationNotLoaded",
+    "ConfigurationLoadError",
     "MigrationError",
 )
 

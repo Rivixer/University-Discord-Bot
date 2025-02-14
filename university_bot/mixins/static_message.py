@@ -18,15 +18,26 @@ from typing import TYPE_CHECKING, Any, TypeVar
 from nextcord import HTTPException
 from nextcord.ui import View
 
-from university_bot.exceptions import ResourceFetchFailed, ViewNotLoaded
-from university_bot.models import DataConfigBaseModel
-from university_bot.utils import fetch_channel, fetch_message
+from university_bot import (
+    DataConfigBaseModel,
+    ResourceFetchFailed,
+    fetch_channel,
+    fetch_message,
+)
 
 if TYPE_CHECKING:
     from nextcord import Message
 
     from university_bot import UniversityBot
     from university_bot.models import MessageData
+
+
+class ViewNotLoadedError(Exception):
+    """Raised when the view is not loaded."""
+
+
+class RefreshMessageFailedError(Exception):
+    """Raised when refreshing the static message fails."""
 
 
 class StaticMessageDataConfig(DataConfigBaseModel, ABC):
@@ -208,9 +219,9 @@ class StaticMessageMixin[HandlerT, DataT: StaticMessageDataConfig](ABC):
         Raises
         ------
         ResourceFetchFailed
-            If the static message cannot be fetched.
-        HTTPException
-            If the message fails to update on Discord.
+            If fetching the message fails.
+        RefreshMessageFailedError
+            If editing the message fails.
         """
         try:
             message = await self._fetch_message()
@@ -225,7 +236,7 @@ class StaticMessageMixin[HandlerT, DataT: StaticMessageDataConfig](ABC):
             await message.edit(**message_data)
         except HTTPException as e:
             self.__logger.error("Failed to refresh message: %s", e)
-            raise e  # TODO: Consider raising a custom exception
+            raise RefreshMessageFailedError("Failed to refresh message.") from e
 
 
 class StaticViewMixin[HandlerT, ViewT: View, DataT: StaticMessageDataConfig](
@@ -332,7 +343,7 @@ class StaticViewMixin[HandlerT, ViewT: View, DataT: StaticMessageDataConfig](
         """
         if self.view is None:
             if not missing_ok:
-                raise ViewNotLoaded("View is not loaded.")
+                raise ViewNotLoadedError("View is not loaded.")
             return
 
         self.__logger.debug("Unloading view.")

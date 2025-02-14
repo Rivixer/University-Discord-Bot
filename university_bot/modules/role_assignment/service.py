@@ -21,10 +21,10 @@ from university_bot import (
 from university_bot.mixins.static_message import StaticViewMixin
 
 from .config import RoleAssignmentDataConfig
-from .exceptions import RoleAssignmentFailed
+from .exceptions import RoleAssignmentFailedError
 from .handler import RoleAssignmentHandler
 from .views import RoleAssignmentView
-from ...mixins.configuration import ConfigurationServiceMixin, InvalidConfiguration
+from ...mixins.configuration import ConfigurationServiceMixin, InvalidConfigurationError
 
 if TYPE_CHECKING:
     from nextcord import Member, Role
@@ -76,7 +76,7 @@ class RoleAssignmentService(
             self.data.save(self.config.data_filepath, bot, _logger)
         except json.JSONDecodeError as e:
             _logger.error("Data file is invalid.")
-            raise InvalidConfiguration("Data file is invalid.") from e
+            raise InvalidConfigurationError("Data file is invalid.") from e
 
         ConfigurationServiceMixin.__init__(  # type: ignore
             self, bot, self.data, self.config.data_filepath, _logger
@@ -121,7 +121,7 @@ class RoleAssignmentService(
                 channel = await fetch_channel(self.bot, data.channel_id)
                 await fetch_message(channel, data.message_id)
         except (ValidationError, json.JSONDecodeError, ResourceFetchFailed) as e:
-            raise InvalidConfiguration("Invalid JSON content.") from e
+            raise InvalidConfigurationError("Invalid JSON content.") from e
 
     @override
     async def refresh_message(self, handler: RoleAssignmentHandler) -> None:
@@ -160,6 +160,6 @@ class RoleAssignmentService(
 
         for result in results:
             if isinstance(result, Exception):
-                raise RoleAssignmentFailed(
+                raise RoleAssignmentFailedError(
                     "Failed to update roles for user."
                 ) from result

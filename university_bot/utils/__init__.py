@@ -11,4 +11,5 @@ from .fetches import *
 from .interactions import *
 from .localization import *
 from .logger import *
+from .messages import *
 from .voice_channels import *

@@ -6,17 +6,21 @@ from __future__ import annotations
 import asyncio
 from typing import TYPE_CHECKING, override
 
-from nextcord import Forbidden, HTTPException, InvalidArgument, NotFound
+from nextcord import Forbidden, HTTPException, InvalidArgument
 from nextcord.utils import MISSING
 
 from university_bot import InteractionUtils, get_logger
+from university_bot.utils.messages import MessageDeletionError, attempt_message_delete
 
-from .exceptions import RoleAssignmentError, RoleAssignmentFailed
+from .exceptions import RoleAssignmentError, RoleAssignmentFailedError
 from .views import RoleSelectView
-from ...mixins.configuration import ConfigurationHandlerMixin, SaveConfigurationFailed
+from ...mixins.configuration import (
+    ConfigurationHandlerMixin,
+    SaveConfigurationFailedError,
+)
 
 if TYPE_CHECKING:
-    from nextcord import Guild, Member, Message, Role
+    from nextcord import Guild, Member, Role
 
     from university_bot import Interaction
 
@@ -62,57 +66,71 @@ class RoleAssignmentHandler(ConfigurationHandlerMixin):
         Raises
         ------
         RoleAssignmentError
-            - If the command must be used on a messageable channel.
-            - If the message data is invalid.
-            - If the message sending fails.
-            - If the save data fails.
+            - If the command is not used on a messageable channel.
+            - If preparing the message data fails.
+            - If sending the message fails.
+            - If saving the message data fails.
         """
         try:
             channel = InteractionUtils.ensure_messageable_channel(interaction)
-            channel_id: int = getattr(channel, "id")
         except TypeError as e:
             raise RoleAssignmentError(
-                "Command must be used on messageable channel."
+                "Command must be used on a messageable channel."
             ) from e
+
+        channel_id: int = getattr(channel, "id", -1)
+        channel_name: str = getattr(channel, "name", "Unknown")
+        channel_log = f'"{channel_name}" ({channel_id})'
 
         try:
             message_data = await self.service.prepare_message_data(
                 self, missing=preview
             )
-
-            if preview:
-                await interaction.followup.send(**message_data, ephemeral=True)
-                return
-
-            message = await channel.send(**message_data)
-
-            try:
-                self.service.update_message_data(message)
-            except SaveConfigurationFailed as e:
-                _logger.error(
-                    "Failed to save message data for message %s on channel %s. "
-                    "Trying to delete message.",
-                    message.id,
-                    channel_id,
-                    exc_info=True,
-                )
-                await self._attempt_message_delete_after_save_failure(message, e)
-        except Forbidden as e:
-            _logger.error("Failed to send message on channel %s. %s", channel_id, e)
-            raise RoleAssignmentError("Failed to send message") from e
-        except HTTPException as e:
+        except ValueError as e:
             _logger.error(
-                "Failed to send message on channel %s. %s", channel_id, e, exc_info=True
+                "Failed to prepare message data for channel %s.",
+                channel_log,
+                exc_info=True,
             )
-            raise RoleAssignmentError("Failed to send message") from e
-        except (InvalidArgument, ValueError) as e:
-            _logger.error("Invalid message data. %s", e, exc_info=True)
-            raise RoleAssignmentError("Failed to send message") from e
+            raise RoleAssignmentError("Failed to prepare message data.") from e
+
+        try:
+            message = await channel.send(**message_data)
+        except (Forbidden, HTTPException, InvalidArgument) as e:
+            _logger.error(
+                "Failed to send message on channel %s: %s",
+                channel_id,
+                e,
+                exc_info=True,
+            )
+            raise RoleAssignmentError("Failed to send message.") from e
+
+        if preview:
+            await interaction.followup.send(**message_data, ephemeral=True)
+            return
+
+        try:
+            self.service.update_message_data(message)
+        except SaveConfigurationFailedError as e:
+            _logger.error(
+                "Failed to save message data for message %s on channel %s. "
+                "Trying to delete message.",
+                message.id,
+                channel_log,
+                exc_info=True,
+            )
+            try:
+                await attempt_message_delete(message, e, _logger)
+            except MessageDeletionError as del_err:
+                raise RoleAssignmentError(
+                    "Failed to save message data and delete message."
+                ) from del_err
+            raise RoleAssignmentError("Failed to save message data.") from e
 
         _logger.info(
-            "Message with view sent on channel %s (message_id=%s).",
-            channel_id,
+            "Sent role assignment message (%s) in channel %s.",
             message.id,
+            channel_log,
         )
 
     async def handle_node_selection(
@@ -193,7 +211,7 @@ class RoleAssignmentHandler(ConfigurationHandlerMixin):
                     member.id,
                     role_id,
                 )
-                raise RoleAssignmentFailed(f"Failed to find role {role_id}.")
+                raise RoleAssignmentFailedError(f"Failed to find role {role_id}.")
             selected_roles.append(role)
 
         roles_to_delete = [r for r in selectable_roles if r not in selected_roles]
@@ -213,7 +231,7 @@ class RoleAssignmentHandler(ConfigurationHandlerMixin):
                     result,
                     exc_info=True,
                 )
-                raise RoleAssignmentFailed("Failed to update roles.") from result
+                raise RoleAssignmentFailedError("Failed to update roles.") from result
 
         await self._attempt_response_assignment_success(interaction, node)
 
@@ -235,30 +253,3 @@ class RoleAssignmentHandler(ConfigurationHandlerMixin):
                 interaction.user.id if interaction.user else "Unknown",
                 e,
             )
-
-    async def _attempt_message_delete_after_save_failure(
-        self,
-        message: Message,
-        original_error: Exception,
-    ) -> None:
-        try:
-            await message.delete()
-            _logger.info(
-                "Message %s successfully deleted after save failure.", message.id
-            )
-        except NotFound:
-            _logger.warning(
-                "Message %s not found during deletion. It may have already been removed.",
-                message.id,
-            )
-        except HTTPException as e:
-            _logger.error(
-                "Failed to delete message %s on channel %s after save failure.",
-                message.id,
-                message.channel.id,
-                exc_info=True,
-            )
-            raise RoleAssignmentError(
-                "Failed to delete message after save failure. "
-                f"Original error: {original_error}, Delete error: {e}"
-            ) from e

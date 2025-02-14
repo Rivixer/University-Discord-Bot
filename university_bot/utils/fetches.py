@@ -8,12 +8,26 @@ from typing import TYPE_CHECKING
 from nextcord import TextChannel, Thread
 from nextcord.errors import Forbidden, HTTPException, InvalidData, NotFound
 
-from university_bot.exceptions import ResourceFetchFailed
-
 if TYPE_CHECKING:
     from nextcord import Message
 
     from university_bot import UniversityBot
+
+
+class ResourceFetchFailed(Exception):
+    """An exception raised when fetching a resource fails.
+
+    Attributes
+    ----------
+    resource: :class:`str`
+        The resource that failed to fetch.
+    """
+
+    resource: str
+
+    def __init__(self, resource: str, *args: object) -> None:
+        self.resource = resource
+        super().__init__(*args)
 
 
 async def fetch_channel(bot: UniversityBot, channel_id: int) -> TextChannel | Thread:

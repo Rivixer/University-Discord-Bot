@@ -18,79 +18,75 @@ from typing import TYPE_CHECKING, Any, Generic, TypeVar, override
 from nextcord import File, HTTPException, InteractionResponded, TextInputStyle
 from nextcord.ui import Modal, TextInput
 
-from university_bot import catch_interaction_exceptions
+from university_bot import ConfigurationError, catch_interaction_exceptions
 
 if TYPE_CHECKING:
     from pathlib import Path
 
     from nextcord import Attachment
 
-    from ..abc import DataConfigBaseModel
     from ..bot import UniversityBot
+    from ..models import DataConfigBaseModel
     from ..types import Interaction
 
 
-class ConfigurationError(Exception):
-    """Base exception for configuration errors."""
-
-
-class InvalidConfiguration(ConfigurationError):
+class InvalidConfigurationError(ConfigurationError):
     """Raised when the configuration is invalid.
 
     Subclass of :exc:`ConfigurationError`.
     """
 
 
-class ConfigurationFileNotFound(ConfigurationError):
+class ConfigurationFileNotFoundError(ConfigurationError):
     """Raised when the configuration file is missing.
 
     Subclass of :exc:`ConfigurationError`.
     """
 
 
-class ConfigurationInvalidJSON(ConfigurationError):
+class ConfigurationInvalidJSONError(ConfigurationError):
     """Raised when the configuration file contains invalid JSON.
 
     Subclass of :exc:`ConfigurationError`.
     """
 
 
-class SendConfigurationFailed(ConfigurationError):
+class SendConfigurationFailedError(ConfigurationError):
     """Raised when sending the configuration file fails.
 
     Subclass of :exc:`ConfigurationError`.
     """
 
 
-class ReadAttachmentFailed(ConfigurationError):
+class ReadAttachmentFailedError(ConfigurationError):
     """Raised when reading the attachment fails.
 
     Subclass of :exc:`ConfigurationError`.
     """
 
 
-class ApplyConfigurationFailed(ConfigurationError):
+class ApplyConfigurationFailedError(ConfigurationError):
     """Raised when applying the configuration updates fails.
 
     Subclass of :exc:`ConfigurationError`.
     """
 
 
-class SaveConfigurationFailed(ConfigurationError):
+class SaveConfigurationFailedError(ConfigurationError):
     """Raised when saving the configuration updates fails.
 
     Subclass of :exc:`ConfigurationError`.
     """
 
 
-class ModalInteractionFailed(ConfigurationError):
+class ModalInteractionFailedError(ConfigurationError):
     """Raised when there is an issue with sending or processing a modal interaction.
 
     Subclass of :exc:`ConfigurationError`.
     """
 
 
-class ContentTooLongError(ModalInteractionFailed):
+class ContentTooLongError(ModalInteractionFailedError):
     """Raised when the content is too long to be displayed in a TextInput.
 
     Subclass of :exc:`ModalInteractionFailed`.
@@ -182,7 +178,9 @@ class ConfigurationHandlerMixin(ABC):
             file = File(self.__service.data_filepath)
         except FileNotFoundError as e:
             self.__logger.error("Failed to get configuration file. %s", e)
-            raise ConfigurationFileNotFound("Failed to get configuration file.") from e
+            raise ConfigurationFileNotFoundError(
+                "Failed to get configuration file."
+            ) from e
 
         try:
             await interaction.response.send_message(file=file, ephemeral=True)
@@ -190,7 +188,9 @@ class ConfigurationHandlerMixin(ABC):
             self.__logger.error(
                 "Failed to send configuration file. %s", e, exc_info=True
             )
-            raise SendConfigurationFailed("Failed to send configuration file.") from e
+            raise SendConfigurationFailedError(
+                "Failed to send configuration file."
+            ) from e
 
     async def set_configuration(
         self,
@@ -228,7 +228,7 @@ class ConfigurationHandlerMixin(ABC):
                 e,
                 exc_info=True,
             )
-            raise ReadAttachmentFailed("Failed to read attachment.") from e
+            raise ReadAttachmentFailedError("Failed to read attachment.") from e
 
         await self._apply_configuration_updates(content)
         await self._attempt_send_set_configuration_success_message(interaction)
@@ -265,10 +265,10 @@ class ConfigurationHandlerMixin(ABC):
             content = self.__service.get_config_content(indent)
         except FileNotFoundError as e:
             self.__logger.error("Failed to get config content. %s", e)
-            raise ConfigurationFileNotFound("Failed to get config content.") from e
+            raise ConfigurationFileNotFoundError("Failed to get config content.") from e
         except ValueError as e:
             self.__logger.error("Failed to get config content. %s", e)
-            raise ConfigurationInvalidJSON("Failed to get config content.") from e
+            raise ConfigurationInvalidJSONError("Failed to get config content.") from e
 
         @catch_interaction_exceptions([Exception])
         async def callback(
@@ -284,7 +284,7 @@ class ConfigurationHandlerMixin(ABC):
         try:
             await interaction.response.send_modal(modal)
         except (HTTPException, InteractionResponded) as e:
-            raise ModalInteractionFailed("Failed to send modal.") from e
+            raise ModalInteractionFailedError("Failed to send modal.") from e
 
     async def _attempt_send_set_configuration_success_message(
         self, interaction: Interaction
@@ -339,13 +339,13 @@ class ConfigurationHandlerMixin(ABC):
             await self.__service.validate_data(content)
             self.__service.data = self.__service.get_data_from_string(content)
             self.__service.save_data()
-        except (InvalidConfiguration, SaveConfigurationFailed) as e:
+        except (InvalidConfigurationError, SaveConfigurationFailedError) as e:
             self.__logger.error(
                 "Failed to save configuration updates. %s",
                 e,
                 exc_info=True,
             )
-            raise ApplyConfigurationFailed(
+            raise ApplyConfigurationFailedError(
                 "Failed to save configuration updates."
             ) from e
 
@@ -422,8 +422,8 @@ class ConfigurationServiceMixin(ABC, Generic[DataConfigT]):
         """
         try:
             self.get_data_from_string(json_content)
-        except InvalidConfiguration as e:
-            raise InvalidConfiguration("Invalid JSON content.") from e
+        except InvalidConfigurationError as e:
+            raise InvalidConfigurationError("Invalid JSON content.") from e
 
     def get_config_content(self, indent: int = 4) -> str:
         """Reads and returns the configuration as a formatted JSON string.
