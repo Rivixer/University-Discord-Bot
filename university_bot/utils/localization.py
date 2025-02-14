@@ -11,13 +11,12 @@ Localization: :class:`.Localization`
     A class providing localization support.
 """
 
-
 from __future__ import annotations
 
 import inspect
 import json
 import string
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, ClassVar, overload
 
 from nextcord import Locale, SlashOption
 
@@ -30,9 +29,22 @@ if TYPE_CHECKING:
     from university_bot.config import LocalizationConfig
 
 
-__all__ = ("Localization",)
+__all__ = (
+    "Localization",
+    "LocalizationGroup",
+    "LocalizedGroup",
+)
 
 _logger = get_logger(__name__)
+
+
+def _resolve_key(data: dict[str, Any], keys: list[str], default: Any) -> Any:
+    result = data
+    for key in keys:
+        result = result.get(key)
+        if result is None:
+            return default
+    return result
 
 
 class Localization:
@@ -41,6 +53,13 @@ class Localization:
     _config: LocalizationConfig
     _data: dict[Locale, dict[str, Any]] = {}
     _loaded: bool = False
+
+    _def_locale: ClassVar[Locale] = Locale.en_US
+
+    @staticmethod
+    def default_locale() -> Locale:
+        """Returns the default locale."""
+        return Localization._def_locale
 
     @classmethod
     def load(cls, config: LocalizationConfig) -> None:
@@ -90,6 +109,29 @@ class Localization:
             )
 
         cls._loaded = True
+
+    @classmethod
+    def get_group(cls, key: str) -> LocalizationGroup:
+        """Returns a localization group for a specific key.
+
+        This method retrieves a localization group for a specific key.
+        The group contains localized values for the key across all supported locales.
+
+        Parameters
+        ----------
+        key: :class:`str`
+            The key for the localization group.
+
+        Returns
+        -------
+        :class:`.LocalizationGroup`
+            The localization group containing localized values for the key.
+        """
+        groups: dict[Locale, dict[str, Any]] = {}
+        keys = key.split(".")
+        for locale, locale_data in cls._data.items():
+            groups[locale] = _resolve_key(locale_data, keys, {})
+        return LocalizationGroup(groups)
 
     @classmethod
     def get_localized_choice_name(
@@ -266,30 +308,27 @@ class Localization:
 
         return default
 
+    @overload
     @staticmethod
-    def apply_localizations(
-        command: SlashApplicationCommand | SlashApplicationSubcommand,
-    ) -> Any:
+    def apply_localizations(component: SlashApplicationCommand) -> Any:
         """Automatically applies localized names, descriptions,
         and parameter localizations to a slash command.
 
-        This decorator retrieves translations from the `Localization`
-        system and assigns them to `name_localizations` and
-        `description_localizations` for both the command and its parameters.
+        This decorator retrieves translations from the :class:`.Localization`
+        and assigns them to `name_localizations` and `description_localizations`
+        for the command and its parameters.
 
-        It must be placed **above** the `@nextcord.slash_command` or `@subcommand` decorator.
+        It must be placed **above** the `@nextcord.slash_command` decorator.
 
         Parameters
         ----------
-        command: `SlashApplicationCommand` | `SlashApplicationSubcommand`
-            The slash command or subcommand to which localizations should be applied.
+        component: `nextcord.SlashApplicationCommand`
+            The slash command to which localizations should be applied.
 
         Notes
         -----
         - The localization data must be loaded before using this decorator.
-            Use `Localization.load(config)` to load the localization data.
-        - Missing localizations will be replaced with default values
-            specified in the command.
+        - Missing localizations will be replaced with default values specified in the command.
         - Localizations for parameters (SlashOption) are also applied,
             including names, descriptions, and choices.
 
@@ -302,7 +341,7 @@ class Localization:
             interaction: Interaction,
             option: str = SlashOption(name="option", description="An option"),
         ) -> None:
-            await interaction.response.send_message(f"Selected: {option}")
+            ...
         ```
 
         In this example:
@@ -311,26 +350,79 @@ class Localization:
         - If localizations are missing, provided default values will be used.
         """
 
+    @overload
+    @staticmethod
+    def apply_localizations(component: SlashApplicationSubcommand) -> Any:
+        """Automatically applies localized names, descriptions,
+        and parameter localizations to a slash subcommand.
+
+        This decorator retrieves translations from the :class:`.Localization`
+        and assigns them to `name_localizations` and `description_localizations`
+        for the subcommand and its parameters.
+
+        It must be placed **above** the `@subcommand` decorator.
+
+        Parameters
+        ----------
+        component: `nextcord.SlashApplicationSubcommand`
+            The slash subcommand to which localizations should be applied.
+
+        Notes
+        -----
+        - The localization data must be loaded before using this decorator.
+        - Missing localizations will be replaced with default values specified in the subcommand.
+        - Localizations for parameters (SlashOption) are also applied,
+            including names, descriptions, and choices.
+
+        Example
+        -------
+        ```python
+        @nextcord.slash_command(name="command", description="Placeholder for a command group.")
+        async def _command(_: Interaction) -> None:
+            ...
+
+        @Localization.apply_localizations
+        @_command.subcommand(name="subcommand", description="A test subcommand.")
+        async def _subcommand(
+            interaction: Interaction,
+            option: str = SlashOption(name="option", description="An option"),
+        ) -> None:
+            ...
+        ```
+
+        In this example:
+        - The subcommand's name and description will be localized (if available).
+        - The `option` parameter will also receive localized name and description (if available).
+        - If localizations are missing, provided default values will be used.
+        """
+
+    @staticmethod
+    def apply_localizations(
+        component: SlashApplicationCommand | SlashApplicationSubcommand,
+    ) -> Any:
+        """apply_localizations"""
         if not Localization._loaded:
             _logger.warning(
-                "Localization not loaded. Skipping localization for command /%s.",
-                command.qualified_name,
+                "Localization not loaded. Applying localizations will have no effect. (%s)",
+                component.qualified_name,
             )
-            return command
+            return component
 
         name_localizations = {}
         description_localizations = {}
 
         for locale, data in Localization._data.items():
-            command_data = Localization._get_command_data(command.qualified_name, data)
+            command_data = Localization._get_command_data(
+                component.qualified_name, data
+            )
             if "name" in command_data:
                 name_localizations[locale] = command_data["name"]
             if "description" in command_data:
                 description_localizations[locale] = command_data["description"]
 
-        command.name_localizations = name_localizations
-        command.description_localizations = description_localizations
-        sig = inspect.signature(command.callback)  # type: ignore
+        component.name_localizations = name_localizations
+        component.description_localizations = description_localizations
+        sig = inspect.signature(component.callback)  # type: ignore
 
         for param_name, param in sig.parameters.items():
             if not isinstance(param.default, SlashOption):
@@ -338,14 +430,14 @@ class Localization:
 
             option = param.default
             param_translations = Localization._get_param_translations(
-                command.qualified_name, param_name, param.default.name
+                component.qualified_name, param_name, param.default.name
             )
 
             option.name_localizations = param_translations.get("name", {})
             option.description_localizations = param_translations.get("description", {})
             option.choice_localizations = param_translations.get("choices", {})
 
-        return command
+        return component
 
     @staticmethod
     def _get_command_data(command_name: str, data: dict[str, Any]) -> dict[str, Any]:
@@ -382,3 +474,122 @@ class Localization:
                     translations["choices"][key][locale] = value
 
         return translations
+
+
+class LocalizationGroup:
+    """Represents a group of localized values for a specific key.
+
+    This class stores localized values for various locales in a nested
+    dictionary structure. Each locale maps to its own dictionary
+    containing keys and associated values. It provides methods to retrieve
+    localized values for a given locale or to extract a subset (group)
+    of the localization data.
+    """
+
+    _data: dict[Locale, dict[str, Any]] = {}
+
+    def __init__(self, data: dict[Locale, dict[str, Any]]) -> None:
+        self._data = data
+
+    def get[T](self, locale: Locale, key: str, default: T = None) -> T:
+        """Retrieves a localized value for a specific locale.
+
+        This method navigates the nested dictionary for the given locale
+        using a dot-separated key. If the key is not found, the provided
+        default value is returned.
+
+        Parameters
+        ----------
+        locale: :class:`nextcord.Locale`
+            The locale for which the value should be retrieved.
+        key: :class:`str`
+            The key for the localized value.
+        default: `T` | `None`
+            The default value to return if the key is not found.
+
+        Returns
+        -------
+        `T` | `None`
+            The localized value for the key in the specified locale.
+        """
+        keys = key.split(".")
+        data = self._data.get(locale, {})
+        return _resolve_key(data, keys, default)
+
+    def get_group(self, key: str) -> LocalizationGroup:
+        """Retrieves a nested localization group for a specific key.
+
+        For each locale in the current data, this method extracts
+        a nested dictionary based on the provided dot-separated key.
+        The result is a new LocalizationGroup containing only that subset.
+
+        Parameters
+        ----------
+        key: :class:`str`
+            The key for the nested localization group.
+
+        Returns
+        -------
+        :class:`.LocalizationGroup`
+            The nested localization group containing localized values for the key.
+        """
+        groups: dict[Locale, dict[str, Any]] = {}
+        keys = key.split(".")
+        for locale, locale_data in self._data.items():
+            groups[locale] = _resolve_key(locale_data, keys, {})
+        return LocalizationGroup(groups)
+
+
+class LocalizedGroup:
+    """Represents a group of localized values for a specific key.
+
+    This class providing a simplified interface for retrieving localized values
+    and nested groups without having to specify the locale each time.
+    """
+
+    _loc: LocalizationGroup
+    __locale: Locale
+
+    def __init__(self, locale: Locale, loc: LocalizationGroup) -> None:
+        self._loc = loc
+        self.__locale = locale
+
+    def get(self, key: str, default: str = "") -> str:
+        """Retrieves a localized value for a specific key.
+
+        This method retrieves a localized value for the dot-separated key.
+        If the key is not found, the provided default value is returned.
+
+        Parameters
+        ----------
+        key: :class:`str`
+            The key for the localized value.
+        default: :class:`str`
+            The default value to return if the key is not found.
+
+        Returns
+        -------
+        :class:`str`
+            The localized value for the key.
+        """
+        return self._loc.get(self.__locale, key, default)
+
+    def get_group(self, key: str) -> LocalizedGroup:
+        """Retrieves a nested localized group for a specific key.
+
+        This method returns a new LocalizedGroup instance representing
+        a subset of the localized data for the stored locale, based
+        on the provided dot-separated key.
+
+
+        Parameters
+        ----------
+        key: :class:`str`
+            The key for the nested localized group.
+
+        Returns
+        -------
+        :class:`.LocalizedGroup`
+            The nested localized group containing localized values for the key.
+        """
+        return LocalizedGroup(self.__locale, self._loc.get_group(key))

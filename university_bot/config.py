@@ -22,6 +22,7 @@ __all__ = (
     "TemporaryFilesConfig",
     "LoggerConfig",
     "ConfigLoader",
+    "LocalizationConfig",
 )
 
 
