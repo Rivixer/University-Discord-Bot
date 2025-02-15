@@ -230,6 +230,22 @@ class UniversityBot(Bot):
         tasks = [self.load_cog(import_path, name) for import_path, name in cogs_to_load]
         await asyncio.gather(*tasks)
 
+        # TODO: Remove after refactoring
+        path = Path("university_bot/cogs")
+        if not path.exists():
+            self._logger.error("Old cogs path does not exist: %s", path)
+            return
+
+        self._logger.info("Loading old cogs...")
+        for file in os.listdir(path):
+            if file.endswith(".py") and not file.startswith("_"):
+                try:
+                    self.load_extension(f"university_bot.cogs.{file[:-3]}")
+                except Exception as e:
+                    self._logger.error(f"Failed to load cog {file}: {e}")
+                else:
+                    self._logger.info(f"Cog {file} loaded.")
+
         self._logger.info("Cogs loaded.")
         self._cogs_loaded = True
 

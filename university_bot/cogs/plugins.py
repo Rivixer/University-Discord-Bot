@@ -66,7 +66,7 @@ from university_bot.errors import (
     PluginNotFoundError,
     PluginOperationError,
 )
-from university_bot.utils import InteractionUtils
+from university_bot.utils2 import InteractionUtils
 
 if TYPE_CHECKING:
     from university_bot import UniversityBot
@@ -109,11 +109,11 @@ class PluginsCog(commands.Cog):
         """Initializes the cog."""
         self._bot = bot
         self._list = []
-        self._load_plugins()
         self._plugins_info.start()  # pylint: disable=no-member
 
     @tasks.loop(count=1)
     async def _plugins_info(self):
+        await self._load_plugins()
         await self._bot.wait_until_ready()
 
         enabled = [plugin.name for plugin in self._list if plugin.is_enabled]
@@ -204,7 +204,7 @@ class PluginsCog(commands.Cog):
         if plugin.is_enabled:
             raise ValueError(f"Plugin '{name}' is already enabled")
 
-        if not self._bot.load_cog(plugin.extension_name):
+        if not await self._bot.load_cog(plugin.extension_name):
             raise PluginOperationError(f"Plugin '{name}' couldn't be enabled")
 
         plugin.enable()
@@ -291,7 +291,7 @@ class PluginsCog(commands.Cog):
 
         _console_message(f"Plugin {plugin.name} has been reloaded.")
 
-    def _load_plugins(self) -> None:
+    async def _load_plugins(self) -> None:
         """Loads the plugins."""
         plugins: list[Plugin] = []
 
@@ -315,7 +315,7 @@ class PluginsCog(commands.Cog):
                 continue
 
             if plugin.is_enabled:
-                if not self._bot.load_cog(plugin.extension_name):
+                if not await self._bot.load_cog(plugin.extension_name):
                     Console.error(f"Plugin {plugin.name} couldn't be loaded.")
                     plugin.status = PluginStatus.INVALID
 

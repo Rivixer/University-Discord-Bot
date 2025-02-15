@@ -37,18 +37,14 @@ from nextcord.ui import Modal, TextInput
 
 from university_bot.console import Console, FontColour
 from university_bot.errors import ExceptionData, RegistrationError
-from university_bot.models import Model
-from university_bot.utils import (
-    InteractionUtils,
-    Matcher,
-    MemberUtils,
-    SmartDict,
-)
+from university_bot.models2 import Model
+from university_bot.utils2 import InteractionUtils, Matcher, MemberUtils, SmartDict
 
 if TYPE_CHECKING:
     from nextcord.guild import Guild
     from nextcord.message import Message
     from nextcord.role import Role
+
     from university_bot import UniversityBot
 
 
@@ -95,6 +91,54 @@ class RegistrationCog(commands.Cog):
 
         await asyncio.gather(*(msg.delete() for msg in to_delete))
 
+    @nextcord.slash_command(
+        name="register_whitelist",
+    )
+    @InteractionUtils.with_info(
+        catch_exceptions=[
+            ExceptionData(
+                DiscordException,
+                with_traceback_in_response=False,
+            ),
+            ExceptionData(
+                RegistrationError,
+                with_traceback_in_response=False,
+            ),
+        ]
+    )
+    @InteractionUtils.with_log(FontColour.GREEN)
+    async def _register_whitelist(
+        self,
+        interaction: Interaction,
+    ) -> None:
+        class WhitelistModal(Modal):
+            def __init__(self) -> None:
+                super().__init__("Register Whitelist", timeout=None)
+                self.add_item(
+                    TextInput(
+                        label="Enabled",
+                        placeholder="true/false",
+                        required=True,
+                    )
+                )
+                self.add_item(
+                    TextInput(
+                        label="Auto-verify",
+                        placeholder="true/false",
+                        required=True,
+                    )
+                )
+                self.add_item(
+                    TextInput(
+                        label="Whitelisted indexes",
+                        placeholder="123456\n654321\n...",
+                        required=True,
+                        style=TextInputStyle.paragraph,
+                    )
+                )
+
+        await interaction.response.send_modal(WhitelistModal())
+
     @commands.Cog.listener(name="on_ready")
     async def _on_ready(self) -> None:
         await self._clear_messages_on_channel()
@@ -102,7 +146,6 @@ class RegistrationCog(commands.Cog):
     @nextcord.slash_command(
         name="register",
         description="Komenda do zarejestrowania się (dla studentów SGGW).",
-        dm_permission=False,
     )
     @InteractionUtils.with_info(
         catch_exceptions=[
@@ -216,7 +259,6 @@ class RegistrationCog(commands.Cog):
     @nextcord.slash_command(
         name="register_guest",
         description="Komenda do wysłania prośby o rejestrację (jeśli nie jesteś studentem SGGW).",
-        dm_permission=False,
     )
     @InteractionUtils.with_info(
         catch_exceptions=[
@@ -238,7 +280,6 @@ class RegistrationCog(commands.Cog):
     @nextcord.slash_command(
         name="whois",
         description="Show information about a member.",
-        dm_permission=False,
     )
     @InteractionUtils.with_info(catch_exceptions=[DiscordException])
     @InteractionUtils.with_log()
@@ -283,7 +324,6 @@ class RegistrationCog(commands.Cog):
     @nextcord.slash_command(
         name="edit_member_data",
         description="Edit the member data.",
-        dm_permission=False,
     )
     @InteractionUtils.with_info(catch_exceptions=[DiscordException])
     @InteractionUtils.with_log()
@@ -458,7 +498,7 @@ class RegistrationModel(Model):
             - member's index
             - member's nick
         """
-        guild = self.bot.get_default_guild()
+        guild = self.bot.guild
 
         if len(argument) == 6 and argument.isdigit():
             return self._find_members_by_index(argument, guild)

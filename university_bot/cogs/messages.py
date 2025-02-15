@@ -21,7 +21,7 @@ from nextcord.threads import Thread
 
 from university_bot.console import Console, FontColour
 from university_bot.errors import AttachmentError, ExceptionData
-from university_bot.utils import InteractionUtils, MemberUtils
+from university_bot.utils2 import InteractionUtils, MemberUtils
 
 if TYPE_CHECKING:
     from university_bot import UniversityBot

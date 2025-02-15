@@ -20,8 +20,8 @@ from nextcord.interactions import Interaction
 from nextcord.message import Attachment
 
 from university_bot.errors import UpdateEmbedError
-from university_bot.models import ControllerWithEmbed, EmbedModel, Model
-from university_bot.utils import InteractionUtils
+from university_bot.models2 import ControllerWithEmbed, EmbedModel, Model
+from university_bot.utils2 import InteractionUtils
 
 if TYPE_CHECKING:
     from university_bot import UniversityBot

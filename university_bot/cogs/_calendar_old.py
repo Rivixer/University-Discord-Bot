@@ -44,8 +44,8 @@ from university_bot.errors import (
     MissingPermission,
     UpdateEmbedError,
 )
-from university_bot.models import ControllerWithEmbed, EmbedModel, Model
-from university_bot.utils import (
+from university_bot.models2 import ControllerWithEmbed, EmbedModel, Model
+from university_bot.utils2 import (
     InteractionUtils,
     Matcher,
     SmartDict,
@@ -1774,7 +1774,7 @@ class ReminderController:
         self,
     ) -> Generator[Coroutine[Any, Any, None], None, None]:
         current_time = datetime.datetime.now()
-        guild: Guild = self._bot.get_default_guild()  # type: ignore
+        guild: Guild = self._bot.guild  # type: ignore
 
         async def send_reminder(event: Event) -> None:
             reminder = event.reminder
