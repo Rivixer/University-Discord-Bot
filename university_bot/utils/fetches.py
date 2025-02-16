@@ -25,9 +25,9 @@ class ResourceFetchFailed(Exception):
 
     resource: str
 
-    def __init__(self, resource: str, *args: object) -> None:
+    def __init__(self, resource: str, message: str, *args: object) -> None:
         self.resource = resource
-        super().__init__(*args)
+        super().__init__(message, *args)
 
 
 async def fetch_channel(bot: UniversityBot, channel_id: int) -> TextChannel | Thread:

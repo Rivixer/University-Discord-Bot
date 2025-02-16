@@ -154,7 +154,9 @@ class StaticMessageMixin[HandlerT, DataT: StaticMessageDataConfig](ABC):
 
         if channel_id is None or message_id is None:
             if not missing_ok:
-                raise ResourceFetchFailed("Channel ID or message ID is missing.")
+                raise ResourceFetchFailed(
+                    "static message", "Channel or message ID is missing."
+                )
             return None
 
         channel = await fetch_channel(self.bot, channel_id)
