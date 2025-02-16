@@ -433,6 +433,29 @@ class Localization:
                 component.qualified_name, param_name, param.default.name
             )
 
+            # Build a dictionary of all public, non-callable attributes from the option.
+            # Skip attributes that raise ValueError.
+            option_vars = {}
+            for attr in dir(option):
+                if attr.startswith("_"):
+                    continue
+                try:
+                    attr_value = getattr(option, attr)
+                except ValueError:
+                    continue
+                if not callable(attr_value):
+                    option_vars[attr] = attr_value
+
+            # Format each localized translation using option_vars.
+            for translations in param_translations.copy().values():
+                if option.default is not None:
+                    for locale, translation in translations.items():
+                        if not isinstance(translation, str):
+                            continue
+                        translations[locale] = Localization._safe_format(
+                            translation, **option_vars
+                        )
+            # Assign the processed localization dictionaries to the option's attributes.
             option.name_localizations = param_translations.get("name", {})
             option.description_localizations = param_translations.get("description", {})
             option.choice_localizations = param_translations.get("choices", {})

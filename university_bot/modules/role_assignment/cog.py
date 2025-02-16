@@ -72,7 +72,14 @@ class RoleAssignmentCog(Cog):
         description="Send a new role_assignment message.",
     )
     @catch_interaction_exceptions([RoleAssignmentError])
-    async def _send(self, interaction: Interaction, preview: bool = False) -> None:
+    async def _send(
+        self,
+        interaction: Interaction,
+        preview: bool = SlashOption(
+            description="Whether to send a preview of the message.",
+            default=False,
+        ),
+    ) -> None:
         await self.handler.send_message(interaction, preview)
 
     @Localization.apply_localizations
@@ -109,7 +116,7 @@ class RoleAssignmentCog(Cog):
         self,
         interaction: Interaction,
         indent: int = SlashOption(
-            description="JSON identation level (default 2)",
+            description="JSON identation level (default {default}).",
             min_value=0,
             max_value=8,
             default=2,

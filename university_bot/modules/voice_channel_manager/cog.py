@@ -79,7 +79,7 @@ class VoiceChannelManager(commands.Cog):
         self,
         interaction: Interaction,
         value: int = SlashOption(
-            description="The limit to be set (1-99).",
+            description="The limit to be set ({min_value}-{max_value}).",
             min_value=1,
             max_value=99,
         ),
