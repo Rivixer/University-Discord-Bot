@@ -12,6 +12,7 @@ from nextcord.ui import Button, View, button
 
 from university_bot import Localization, get_logger
 from university_bot.mixins import LocalizedViewMixin
+from university_bot.mixins.timeout import TimeoutViewMixin
 
 from .enums import EventSummaryNavigation
 from ..models import RawEvent
@@ -39,16 +40,7 @@ _loc = Localization.get_group("ui.calendar.views")
 _logger = get_logger(__name__)
 
 
-class _TimeoutMixin:  # pylint: disable=too-few-public-methods
-
-    _manager: CalendarMenuViewManager
-
-    async def on_timeout(self) -> None:
-        """Handles the timeout event."""
-        await self._manager.on_timeout(self)  # type: ignore
-
-
-class CalendarMenuView(_TimeoutMixin, LocalizedViewMixin, View):
+class CalendarMenuView(TimeoutViewMixin, LocalizedViewMixin, View):
     """A view representing the calendar menu.
 
     This view provides buttons for adding events and viewing a summary.
@@ -63,6 +55,7 @@ class CalendarMenuView(_TimeoutMixin, LocalizedViewMixin, View):
         summary_btn_disabled: bool,
     ) -> None:
         View.__init__(self)
+        TimeoutViewMixin.__init__(self, manager)
         LocalizedViewMixin.__init__(self, manager.locale, _loc.get_group("menu"))
         self._manager = manager
 
@@ -80,7 +73,7 @@ class CalendarMenuView(_TimeoutMixin, LocalizedViewMixin, View):
         await self._manager.show_summary(interaction)
 
 
-class _EventView(_TimeoutMixin, LocalizedViewMixin, View, ABC):
+class _EventView(TimeoutViewMixin, LocalizedViewMixin, View, ABC):
     """A base view for handling events."""
 
     _manager: CalendarMenuViewManager
@@ -92,6 +85,7 @@ class _EventView(_TimeoutMixin, LocalizedViewMixin, View, ABC):
         raw_event: RawEvent,
     ) -> None:
         View.__init__(self)
+        TimeoutViewMixin.__init__(self, manager)
         LocalizedViewMixin.__init__(self, manager.locale, _loc.get_group("event"))
 
         self._manager = manager
@@ -245,7 +239,7 @@ class CopyEventView(_EventView):
         await self._manager.show_summary(interaction)
 
 
-class SummaryEventView(_TimeoutMixin, LocalizedViewMixin, View):
+class SummaryEventView(TimeoutViewMixin, LocalizedViewMixin, View):
     """A view providing a navigable summary view of calendar events.
 
     It allows users to navigate through events using buttons for first, previous, next,
@@ -259,6 +253,7 @@ class SummaryEventView(_TimeoutMixin, LocalizedViewMixin, View):
         self, manager: CalendarMenuViewManager, payload: SummaryEventPayload
     ) -> None:
         View.__init__(self)
+        TimeoutViewMixin.__init__(self, manager)
         LocalizedViewMixin.__init__(self, payload.locale, _loc.get_group("summary"))
 
         self._manager = manager

@@ -5,11 +5,13 @@ from __future__ import annotations
 
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, overload
+from typing import TYPE_CHECKING, overload, override
 
 from nextcord import HTTPException, Locale
 
 from university_bot import ResourceFetchFailed
+from university_bot.mixins.timeout import TimeoutManagerMixin
+from university_bot.ui import TimeoutMenuEmbed
 
 from .embeds import (
     AddEventEmbed,
@@ -17,7 +19,6 @@ from .embeds import (
     CopyEventEmbed,
     EditEventEmbed,
     SummaryEventEmbed,
-    TimeoutMenuEmbed,
 )
 from .enums import EventSummaryNavigation
 from .modals import EventInformationModal
@@ -43,6 +44,7 @@ if TYPE_CHECKING:
     from nextcord.ui import View
 
     from university_bot import Interaction
+    from university_bot.mixins.timeout import TimeoutViewMixin
 
     from ..config import CalendarDataConfig
     from ..handler import CalendarHandler
@@ -58,7 +60,7 @@ class _MenuSummaryData:
     index: int = field(default=0)
 
 
-class CalendarMenuViewManager:
+class CalendarMenuViewManager(TimeoutManagerMixin):
     """A manager for the calendar menu view.
 
     Attributes
@@ -162,7 +164,8 @@ class CalendarMenuViewManager:
         self._view = view
         await self._message.edit(content=content, embed=embed, view=view)
 
-    async def on_timeout(self, view: View) -> None:
+    @override
+    async def on_timeout(self, view: View | TimeoutViewMixin) -> None:
         """|coro|
 
         Handles the timeout of the view.

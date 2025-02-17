@@ -32,7 +32,6 @@ __all__ = (
     "EditEventEmbed",
     "CopyEventEmbed",
     "SummaryEventEmbed",
-    "TimeoutMenuEmbed",
 )
 
 _loc = Localization.get_group("ui.calendar.embeds")
@@ -230,16 +229,3 @@ class SummaryEventEmbed(_BaseEventEmbed):
 
         self._build(Color.orange(), edit_view=False)
         self.set_thumbnail(url=payload.config.embed.thumbnail.url)
-
-
-class TimeoutMenuEmbed(LocalizedMixin, Embed):
-    """An embed for displaying a timeout message."""
-
-    def __init__(self, locale: Locale) -> None:
-        LocalizedMixin.__init__(self, locale, _loc.get_group("timeout"))
-        Embed.__init__(
-            self,
-            title=self.get_loc("title", "Timeout"),
-            description=self.get_loc("description", "The operation has timed out."),
-            color=Color.red(),
-        )
