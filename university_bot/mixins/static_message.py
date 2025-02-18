@@ -10,6 +10,7 @@ message functionality.
 
 from __future__ import annotations
 
+import asyncio
 from abc import ABC, abstractmethod
 from logging import Logger
 from pathlib import Path
@@ -233,12 +234,28 @@ class StaticMessageMixin[HandlerT, DataT: StaticMessageDataConfig](ABC):
             raise e
 
         message_data = await self.prepare_message_data(handler)
+        retry_delay = 5
 
-        try:
-            await message.edit(**message_data)
-        except HTTPException as e:
-            self.__logger.error("Failed to refresh message: %s", e)
-            raise RefreshMessageFailedError("Failed to refresh message.") from e
+        while True:
+            try:
+                await message.edit(**message_data)
+                self.__logger.debug("Message refreshed.")
+                return
+            except HTTPException as e:
+                if e.status == 429:
+                    header_retry_after = e.response.headers.get("Retry-After")
+                    sleep_time = (
+                        float(header_retry_after) if header_retry_after else retry_delay
+                    )
+                    self.__logger.warning(
+                        "Failed to refresh message: rate limit (429). Retrying in %d seconds.",
+                        sleep_time,
+                    )
+                    await asyncio.sleep(sleep_time)
+                    retry_delay *= 1.5
+                else:
+                    self.__logger.error("Failed to refresh message: %s", e)
+                    return
 
 
 class StaticViewMixin[HandlerT, ViewT: View, DataT: StaticMessageDataConfig](
@@ -315,17 +332,33 @@ class StaticViewMixin[HandlerT, ViewT: View, DataT: StaticMessageDataConfig](
             message = await self._fetch_message()
             assert message is not None
         except ResourceFetchFailed as e:
-            self.__logger.error("Failed to load view: %s", e)
+            self.__logger.warning("Failed to load view: %s", e)
             return
 
         message_data = await self.prepare_message_data(handler)
 
-        try:
-            await message.edit(**message_data)
-        except HTTPException as e:
-            self.__logger.error("Failed to edit view message: %s", e)
-        else:
-            self.__logger.info("View loaded.")
+        retry_delay = 5
+
+        while True:
+            try:
+                await message.edit(**message_data)
+                self.__logger.info("View loaded.")
+                return
+            except HTTPException as e:
+                if e.status == 429:
+                    header_retry_after = e.response.headers.get("Retry-After")
+                    sleep_time = (
+                        float(header_retry_after) if header_retry_after else retry_delay
+                    )
+                    self.__logger.warning(
+                        "Failed to load view: rate limit (429). Retrying in %d seconds.",
+                        sleep_time,
+                    )
+                    await asyncio.sleep(sleep_time)
+                    retry_delay *= 1.5
+                else:
+                    self.__logger.error("Failed to load view: %s", e)
+                    return
 
     def unload_view(self, *, missing_ok: bool = False) -> None:
         """Unloads the currently loaded view.
