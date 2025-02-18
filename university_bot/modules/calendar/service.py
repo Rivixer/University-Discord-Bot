@@ -23,7 +23,7 @@ from sqlalchemy import delete, select
 from sqlalchemy.exc import SQLAlchemyError
 
 from university_bot import MessageData, ResourceFetchFailed, get_logger
-from university_bot.database.utils import table_exists
+from university_bot.database.utils import create_tables_if_not_exist
 from university_bot.mixins.configuration import (
     ConfigurationServiceMixin,
     InvalidConfigurationError,
@@ -189,15 +189,7 @@ class CalendarService(
         """
         try:
             async with self.bot.database.engine.begin() as conn:
-                if await table_exists(conn, EventDTO.__tablename__):
-                    _logger.debug(
-                        "Calendar database already exists. Skipping creation."
-                    )
-                else:
-                    _logger.debug("Creating calendar database.")
-                    await conn.run_sync(Base.metadata.create_all)
-                    _logger.info("Created calendar database.")
-
+                await create_tables_if_not_exist(conn, _logger, Base)
         except SQLAlchemyError as e:
             _logger.error("Failed to initialize the database.", exc_info=True)
             raise RuntimeError("Failed to initialize the database.") from e
