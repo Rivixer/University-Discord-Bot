@@ -102,7 +102,13 @@
             "name": "przypisanie_ról",
             "/send": {
                 "name": "wyślij",
-                "#description": "Wyślij wiadomość do przypisania ról."
+                "description": "Wyślij wiadomość do przypisania ról.",
+                "#params": {
+                    "preview": {
+                        "name": "podgląd",
+                        "description": "Czy wyświetlić jako podgląd?"
+                    }
+                }
             },
             "/get_configuration": {
                 "name": "pobierz_konfiguracje",
@@ -110,11 +116,23 @@
             },
             "/set_configuration": {
                 "name": "ustaw_konfiguracje",
-                "description": "Ustaw konfigurację przypisania ról."
+                "description": "Ustaw konfigurację przypisania ról.",
+                "#params": {
+                    "attachment": {
+                        "name": "załącznik",
+                        "description": "Plik JSON z konfiguracją kalendarza."
+                    }
+                }
             },
             "/edit_configuration": {
                 "name": "edytuj_konfiguracje",
-                "description": "Edytuj konfigurację przypisania ról."
+                "description": "Edytuj konfigurację przypisania ról.",
+                "#params": {
+                    "indent": {
+                        "name": "wcięcie",
+                        "description": "Wielkość wcięcia w JSONie (domyślnie: {default})."
+                    }
+                }
             }
         },
         "/voice_channel": {
@@ -128,7 +146,7 @@
                 "#params": {
                     "value": {
                         "name": "wartość",
-                        "description": "Wartość limitu użytkowników na kanale głosowym."
+                        "description": "Wartość limitu użytkowników na kanale głosowym ({min_value}-{max_value})."
                     }
                 },
                 "#responses": {
@@ -162,6 +180,12 @@
         }
     },
     "ui": {
+        "timeout": {
+            "embeds": {
+                "title": "Przekroczono limit czasu",
+                "description": "Nie udało się zakończyć operacji w wyznaczonym czasie."
+            }
+        },
         "calendar": {
             "embeds": {
                 "menu": {
@@ -210,10 +234,6 @@
                     "other": {
                         "required": "wymagane"
                     }
-                },
-                "timeout": {
-                    "title": "Przekroczono limit czasu",
-                    "description": "Nie udało się zakończyć operacji w wyznaczonym czasie."
                 }
             },
             "views": {
