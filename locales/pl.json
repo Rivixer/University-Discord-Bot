@@ -4,11 +4,20 @@
             "name": "kalendarz",
             "/send": {
                 "name": "wyślij",
-                "#description": "Wyślij wiadomość z kalendarzem."
+                "description": "Wyślij wiadomość z kalendarzem.",
+                "#params": {
+                    "preview": {
+                        "name": "podgląd",
+                        "description": "Czy wyświetlić jako podgląd?"
+                    }
+                },
+                "#responses": {
+                    "message_sent": "Wiadomość z kalendarzem została wysłana."
+                }
             },
             "/menu": {
                 "name": "menu",
-                "#description": "Wyświetl menu kalendarza."
+                "description": "Wyświetl menu kalendarza."
             },
             "/get_configuration": {
                 "name": "pobierz_konfiguracje",
@@ -16,11 +25,23 @@
             },
             "/set_configuration": {
                 "name": "ustaw_konfiguracje",
-                "description": "Ustaw konfigurację kalendarza."
+                "description": "Ustaw konfigurację kalendarza.",
+                "#params": {
+                    "attachment": {
+                        "name": "załącznik",
+                        "description": "Plik JSON z konfiguracją kalendarza."
+                    }
+                }
             },
             "/edit_configuration": {
                 "name": "edytuj_konfiguracje",
-                "description": "Edytuj konfigurację kalendarza."
+                "description": "Edytuj konfigurację kalendarza.",
+                "#params": {
+                    "indent": {
+                        "name": "wcięcie",
+                        "description": "Wielkość wcięcia w JSONie (domyślnie: {default})."
+                    }
+                }
             }
         },
         "/presence": {

@@ -12,7 +12,11 @@ from university_bot.mixins.configuration import (
     ConfigurationHandlerMixin,
     SaveConfigurationFailedError,
 )
-from university_bot.utils import MessageDeletionError, attempt_message_delete
+from university_bot.utils import (
+    Localization,
+    MessageDeletionError,
+    attempt_message_delete,
+)
 
 from .exceptions import CalendarError
 from .ui import CalendarMenuViewManager
@@ -127,6 +131,17 @@ class CalendarHandler(ConfigurationHandlerMixin):
             message.id,
             channel_log,
         )
+
+        try:
+            await interaction.response.send_message(
+                Localization.get_command_response(
+                    interaction, "message_sent", "Calendar message sent."
+                ),
+                ephemeral=True,
+                delete_after=30,
+            )
+        except HTTPException as e:
+            pass
 
         return
 
