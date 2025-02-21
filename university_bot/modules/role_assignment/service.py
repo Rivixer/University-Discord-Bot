@@ -18,13 +18,16 @@ from university_bot import (
     fetch_message,
     get_logger,
 )
+from university_bot.mixins.configuration import (
+    ConfigurationServiceMixin,
+    InvalidConfigurationError,
+)
 from university_bot.mixins.static_message import StaticViewMixin
 
 from .config import RoleAssignmentDataConfig
 from .exceptions import RoleAssignmentFailedError
 from .handler import RoleAssignmentHandler
-from .views import RoleAssignmentView
-from ...mixins.configuration import ConfigurationServiceMixin, InvalidConfigurationError
+from .ui.views import RoleAssignmentView
 
 if TYPE_CHECKING:
     from nextcord import Member, Role

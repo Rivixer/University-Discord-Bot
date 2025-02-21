@@ -9,15 +9,15 @@ from typing import TYPE_CHECKING, override
 from nextcord import Forbidden, HTTPException, InvalidArgument
 from nextcord.utils import MISSING
 
-from university_bot import InteractionUtils, get_logger
-from university_bot.utils.messages import MessageDeletionError, attempt_message_delete
-
-from .exceptions import RoleAssignmentError, RoleAssignmentFailedError
-from .views import RoleSelectView
-from ...mixins.configuration import (
+from university_bot import InteractionUtils, Localization, get_logger
+from university_bot.mixins.configuration import (
     ConfigurationHandlerMixin,
     SaveConfigurationFailedError,
 )
+from university_bot.utils import MessageDeletionError, attempt_message_delete
+
+from .exceptions import RoleAssignmentError, RoleAssignmentFailedError
+from .ui.views import RoleSelectView
 
 if TYPE_CHECKING:
     from nextcord import Guild, Member, Role
@@ -132,6 +132,17 @@ class RoleAssignmentHandler(ConfigurationHandlerMixin):
             message.id,
             channel_log,
         )
+
+        try:
+            await interaction.response.send_message(
+                Localization.get_command_response(
+                    interaction, "message_sent", "Role assignment message sent."
+                ),
+                ephemeral=True,
+                delete_after=30,
+            )
+        except HTTPException as e:
+            pass
 
     async def handle_node_selection(
         self,
