@@ -67,6 +67,7 @@ class CalendarService(
     bot: UniversityBot
     config: CalendarConfig
     data: CalendarDataConfig
+    _loop_running: bool = False
 
     def __init__(self, bot: UniversityBot, config: CalendarConfig) -> None:
         self.bot = bot
@@ -107,22 +108,39 @@ class CalendarService(
             The calendar handler.
         """
         await self.remove_deprecated_events()
-        await self.refresh_message(handler)
-        self.bot.loop.create_task(self.remove_deprecated_events_loop())
+        try:
+            await self.refresh_message(handler)
+        except ResourceFetchFailed:
+            _logger.warning(
+                "Failed to load calendar. "
+                "Remove deprecated events loop will not be started."
+            )
+        else:
+            self.start_remove_deprecated_events_loop_if_not_running()
+
+    def start_remove_deprecated_events_loop_if_not_running(self) -> None:
+        """Starts the remove deprecated events loop if it is not already running."""
+        if not self._loop_running:
+            _logger.debug("Starting remove deprecated events loop.")
+            self.bot.loop.create_task(self.remove_deprecated_events_loop())
 
     async def remove_deprecated_events_loop(self) -> NoReturn:
         """|coro|
 
         A loop to remove deprecated events from the calendar at midnight.
         """
-        while True:
-            now = datetime.datetime.now()
-            next_midnight = datetime.datetime.combine(
-                now.date() + datetime.timedelta(days=1), datetime.time()
-            )
-            sleep_duration = (next_midnight - now).total_seconds()
-            await asyncio.sleep(sleep_duration)
-            await self.remove_deprecated_events()
+        try:
+            self._loop_running = True
+            while True:
+                now = datetime.datetime.now()
+                next_midnight = datetime.datetime.combine(
+                    now.date() + datetime.timedelta(days=1), datetime.time()
+                )
+                sleep_duration = (next_midnight - now).total_seconds()
+                await asyncio.sleep(sleep_duration)
+                await self.remove_deprecated_events()
+        finally:
+            self._loop_running = False
 
     async def remove_deprecated_events(self) -> list[Event]:
         """|coro|

@@ -93,6 +93,10 @@ class CalendarHandler(ConfigurationHandlerMixin):
             )
             raise CalendarError("Failed to prepare message data.") from e
 
+        if preview:
+            await interaction.response.send_message(**message_data, ephemeral=True)
+            return
+
         try:
             message = await channel.send(**message_data)
         except (Forbidden, HTTPException, InvalidArgument) as e:
@@ -103,10 +107,6 @@ class CalendarHandler(ConfigurationHandlerMixin):
                 exc_info=True,
             )
             raise CalendarError("Failed to send message.") from e
-
-        if preview:
-            await interaction.followup.send(**message_data, ephemeral=True)
-            return
 
         try:
             self.service.update_message_data(message)
@@ -132,18 +132,18 @@ class CalendarHandler(ConfigurationHandlerMixin):
             channel_log,
         )
 
+        self.service.start_remove_deprecated_events_loop_if_not_running()
+
         try:
             await interaction.response.send_message(
                 Localization.get_command_response(
-                    interaction, "message_sent", "Calendar message sent."
+                    interaction, "message_sent", "Verification message sent."
                 ),
                 ephemeral=True,
                 delete_after=30,
             )
         except HTTPException as e:
             pass
-
-        return
 
     async def send_menu(self, interaction: Interaction) -> None:
         """|coro|

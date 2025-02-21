@@ -230,7 +230,7 @@ class StaticMessageMixin[HandlerT, DataT: StaticMessageDataConfig](ABC):
             message = await self._fetch_message()
             assert message is not None
         except ResourceFetchFailed as e:
-            self.__logger.error("Failed to refresh message: %s", e)
+            self.__logger.warning("Failed to refresh message: %s", e)
             raise e
 
         message_data = await self.prepare_message_data(handler)

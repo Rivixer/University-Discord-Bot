@@ -30,7 +30,7 @@ class TimeoutManagerMixin(ABC):
         """
 
 
-class TimeoutViewMixin:
+class TimeoutViewMixin(ABC):
     """A mixin for views that can time out.
 
     When a view times out, the :meth:`on_timeout` method is called.
