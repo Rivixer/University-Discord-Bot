@@ -167,16 +167,32 @@ class RoleAssignmentHandler(ConfigurationHandlerMixin):
         """
         member: Member = interaction.user  # type: ignore
 
+        if forbidden_role := node.get_forbidden_member_role(member):
+            content = node.forbidden.content
+            embed = node.forbidden.embed or MISSING
+            if embed.description:
+                embed.description = embed.description.format(
+                    role=forbidden_role.mention
+                )
+            view = MISSING
+            delete_after = node.forbidden.delete_after
+        else:
+            content = node.content
+            embed = node.embed or MISSING
+            view = RoleSelectView(member, node, self)
+            delete_after = node.delete_after
+
         try:
             await interaction.response.send_message(
-                embed=node.embed if node.embed else MISSING,
-                view=RoleSelectView(member, node, self),
+                content=content,
+                embed=embed,
+                view=view,
+                delete_after=delete_after,
                 ephemeral=True,
-                delete_after=node.delete_after,
             )
         except HTTPException as e:
             _logger.error(
-                "Failed to role selection view (node=%s) for member %s. %s",
+                "Failed to send role selection view (node=%s) for member %s. %s",
                 node.button.label,
                 member.id,
                 e,

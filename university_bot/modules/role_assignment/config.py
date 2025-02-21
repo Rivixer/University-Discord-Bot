@@ -14,7 +14,7 @@ from university_bot.mixins.static_message import StaticMessageDataConfig
 from university_bot.utils2 import ConfigUtils
 
 if TYPE_CHECKING:
-    from nextcord import Guild, Role
+    from nextcord import Guild, Member, Role
 
     from university_bot import EmbedDict
 
@@ -101,6 +101,7 @@ class RoleAssignmentNodeConfig(BaseModel):
     placeholder: str | None
     delete_after: float | None
     success: RoleAssignmentSuccessConfig
+    forbidden: RoleAssignmentForbiddenConfig
     min_selections: int | None
     max_selections: int | None
     roles: list[RoleConfig]
@@ -142,6 +143,21 @@ class RoleAssignmentNodeConfig(BaseModel):
         """
         return [r for r in (guild.get_role(r.id_) for r in self.roles) if r is not None]
 
+    def get_forbidden_member_role(self, member: Member) -> Role | None:
+        """Returns the forbidden member role if the member has it.
+
+        Parameters
+        ----------
+        member: :class:`nextcord.Member`
+            The member to check.
+
+        Returns
+        -------
+        :class:`nextcord.Role` | `None`
+            The forbidden member role if the member has it.
+        """
+        return next((r for r in member.roles if r.id in self.forbidden.role_ids), None)
+
     @staticmethod
     def get_example() -> RoleAssignmentNodeConfig:
         """Returns an example of the role assignment node configuration."""
@@ -157,6 +173,7 @@ class RoleAssignmentNodeConfig(BaseModel):
             placeholder="Select a role",
             delete_after=30,
             success=RoleAssignmentSuccessConfig.get_example(),
+            forbidden=RoleAssignmentForbiddenConfig.get_example(),
             min_selections=1,
             max_selections=1,
             roles=[
@@ -229,6 +246,45 @@ class RoleAssignmentSuccessConfig(BaseModel):
                 color=Color.green(),
             ),
             delete_after=5,
+        )
+
+
+class RoleAssignmentForbiddenConfig(BaseModel):
+    """The configuration of the role assignment forbidden message."""
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    role_ids: list[int]
+    content: str | None
+    embed: Embed | None
+    delete_after: float | None
+
+    @field_validator("embed", mode="before")
+    @classmethod
+    def _validate_embed(cls, value: Embed | EmbedDict | None) -> Embed | None:
+        if value is None:
+            return value
+
+        if not isinstance(value, Embed):
+            value = Embed.from_dict(value)
+
+        if value.description and "{role}" not in value.description:
+            raise ValueError('Embed description must contain "{role}".')
+
+        return value
+
+    @staticmethod
+    def get_example() -> RoleAssignmentForbiddenConfig:
+        """Returns an example of the role assignment forbidden configuration."""
+        return RoleAssignmentForbiddenConfig(
+            role_ids=[],
+            content="You are not allowed to assign this role.",
+            embed=Embed(
+                title="Forbidden",
+                description="Users with {role} are not allowed to assign this role.",
+                color=Color.red(),
+            ),
+            delete_after=10,
         )
 
 
