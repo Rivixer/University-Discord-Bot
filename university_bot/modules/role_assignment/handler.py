@@ -6,7 +6,7 @@ from __future__ import annotations
 import asyncio
 from typing import TYPE_CHECKING, override
 
-from nextcord import Forbidden, HTTPException, InvalidArgument
+from nextcord import Forbidden, HTTPException, InvalidArgument, NotFound
 from nextcord.utils import MISSING
 
 from university_bot import InteractionUtils, Localization, get_logger
@@ -14,7 +14,10 @@ from university_bot.mixins.configuration import (
     ConfigurationHandlerMixin,
     SaveConfigurationFailedError,
 )
-from university_bot.utils import MessageDeletionError, attempt_message_delete
+from university_bot.utils import (
+    MessageDeletionError,
+    attempt_message_delete_after_save_failure,
+)
 
 from .exceptions import RoleAssignmentError, RoleAssignmentFailedError
 from .ui.views import RoleSelectView
@@ -120,7 +123,7 @@ class RoleAssignmentHandler(ConfigurationHandlerMixin):
                 exc_info=True,
             )
             try:
-                await attempt_message_delete(message, e, _logger)
+                await attempt_message_delete_after_save_failure(message, e, _logger)
             except MessageDeletionError as del_err:
                 raise RoleAssignmentError(
                     "Failed to save message data and delete message."
@@ -228,6 +231,8 @@ class RoleAssignmentHandler(ConfigurationHandlerMixin):
         guild: Guild = interaction.guild  # type: ignore
         member: Member = interaction.user  # type: ignore
 
+        await interaction.response.defer()
+
         selectable_roles = node.get_roles(guild)
 
         selected_roles: list[Role] = []
@@ -268,15 +273,35 @@ class RoleAssignmentHandler(ConfigurationHandlerMixin):
         node: RoleAssignmentNodeConfig,
     ) -> None:
         try:
-            await interaction.response.edit_message(
+            if interaction.response.is_done():
+                edit_method = interaction.edit_original_message
+            else:
+                edit_method = interaction.response.edit_message
+            message = await edit_method(
                 content=node.success.content,
                 embed=node.success.embed,
                 view=None,
-                delete_after=node.success.delete_after,
             )
         except HTTPException as e:
-            _logger.warning(
+            return _logger.warning(
                 "Failed to send success message for role assignment to %s. %s",
+                interaction.user.id if interaction.user else "Unknown",
+                e,
+            )
+
+        if not message:
+            return
+
+        if node.success.delete_after:
+            await asyncio.sleep(node.success.delete_after)
+
+        try:
+            await message.delete()
+        except NotFound:
+            pass
+        except HTTPException as e:
+            _logger.warning(
+                "Failed to delete success message for role assignment to %s. %s",
                 interaction.user.id if interaction.user else "Unknown",
                 e,
             )

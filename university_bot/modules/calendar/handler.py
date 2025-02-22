@@ -15,7 +15,7 @@ from university_bot.mixins.configuration import (
 from university_bot.utils import (
     Localization,
     MessageDeletionError,
-    attempt_message_delete,
+    attempt_message_delete_after_save_failure,
 )
 
 from .exceptions import CalendarError
@@ -119,7 +119,7 @@ class CalendarHandler(ConfigurationHandlerMixin):
                 exc_info=True,
             )
             try:
-                await attempt_message_delete(message, e, _logger)
+                await attempt_message_delete_after_save_failure(message, e, _logger)
             except MessageDeletionError as del_err:
                 raise CalendarError(
                     "Failed to save message data and delete message."
