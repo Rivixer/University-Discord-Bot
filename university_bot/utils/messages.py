@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
 __all__ = (
     "MessageDeletionError",
-    "attempt_message_delete",
+    "attempt_message_delete_after_save_failure",
 )
 
 
@@ -22,7 +22,7 @@ class MessageDeletionError(Exception):
     """Raised when an operation to delete a message fails."""
 
 
-async def attempt_message_delete(
+async def attempt_message_delete_after_save_failure(
     message: Message,
     original_error: Exception,
     logger: Logger,

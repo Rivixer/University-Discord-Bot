@@ -29,6 +29,10 @@ username = ""            # Database username.
 password = ""            # Database password.
 connection_setup_queries = []  # Additional queries to run when connecting to the database.
 
+[calendar]
+enabled = false           # Enable calendar module.
+data_filepath = "data/calendar.json"  # Path to the calendar data file, must be a JSON file.
+
 [presence]
 enabled = true            # Enable presence module.
 data_filepath = "data/presence.json"  # Path to the presence data file (must be a JSON file).
@@ -36,6 +40,62 @@ data_filepath = "data/presence.json"  # Path to the presence data file (must be 
 [role_assignment]
 enabled = true            # Enable role assignment module.
 data_filepath = "data/role_assignment.json"  # Path to the role assignment data file (must be a JSON file).
+
+[verification]
+enabled = true          # Enable verification module.
+data_filepath = "data/verification.json"  # Path to the verification data file (must be a JSON file).
+index_placeholder = "123456"  # Index placeholderm, optional.
+index_min_length = 6    # Index minimum length, optional.
+index_max_length = 6    # Index maximum length, optional.
+code_length = 8         # Registration code length.
+view_timoout = 600     # Verification view timeout in seconds.
+max_attempts = 3        # Maximum number of provided codes.
+
+[verification.email_message]
+address_template = "{index}@your_university_domain.com"  # Change! Email structure for verification emails.
+subject = "{guild_name} - Verification code"  # Email subject.
+body_filepath = "data/verification_email.html"  # Path to the email body file (HTML).
+
+[verification.email_message.pl]  # Optional. Localization for the email message. You can add more languages.
+subject = "{guild_name} - Kod weryfikacyjny"  # Localized email subject.
+body_filepath = "data/verification_email_pl.html"  # Path to the localized email body file (HTML).
+
+[verification.smtp]
+username = "your_mail@domain.com"  # Change! Mail address from which the verification emails will be sent.
+password = ""           # Change! Mail password from which the verification emails will be sent. For safety, you can store it in .env file ("VERIFICATION_SMTP_PASSWORD" variable).
+hostname = "smtp.domain.com"  # Change! SMTP server address.
+port = 587              # SMTP server port.
+use_tls = true          # Use TLS for SMTP connection.
+
+[verification.assigned_roles] # List of role IDs to be assigned to users upon successful verification.
+target = []             # Role IDs for the target group—students for whom this server is intended.
+internal = []           # Role IDs for internal members (e.g., other students with the same domain).
+external_request = []   # Role IDs for external members who requested access.
+external = []           # Role IDs for external members granted access.
+
+[verification.additional_summary_field] # Optional. Additional summary field for the verification process.
+enabled = false         # Enable additional summary field.
+name = "By clicking **Confirm**, I agree:"  # Label for the additional summary field.
+value = "to the processing of my personal data for the purpose of the verification process."  # Value for the additional summary field.
+
+[verification.additional_summary_field.pl] # Optional. Additional localized summary field for the verification process.
+name = "Klikając **Potwierdź**, zgadzam się:"  # Localized label for the additional summary field.
+value = "na przetwarzanie moich danych osobowych w celu procesu weryfikacji."  # Localized value for the additional summary field.
+
+[verification.privacy_policy] # Optional. Privacy policy of the server.
+enabled = false         # Enable privacy policy.
+filepath = ""           # Path to the privacy policy file.
+button_label = "Privacy policy"  # Button name for the privacy policy.
+
+[verification.privacy_policy.pl] # Optional. Localization for the privacy policy.
+filepath = ""           # Path to the localized privacy policy file.
+button_label = "Polityka prywatności"  # Localized button label for the privacy policy.
+
+[verification.retention_period]
+target = 0              # Retention period for target group members in days.
+internal = 0            # Retention period for internal members in days.
+external = 0            # Retention period for external members in days.
+external_request = 31   # Optional. Retention period for external members with a request in days.
 
 [voice_channel_manager]
 enabled = true            # Enable voice channel manager.
@@ -46,7 +106,7 @@ channel_order_strategy = "first available"  # Options: "random" or "first availa
 ensure_unique_names = true  # Ensure channel names are unique.
 overflow_channel_name = "Room {number}"  # Fallback name. {number} will be replaced with a number based on the order.
 
-available_channel_names = ["Room A", "Room B"]  # Predefined channel names. Leave empty for defaults.
+available_channel_names = ["Room A", "Room B"]  # Predefined channel names. If empty, the overflow_channel_name will be used.
 
 [voice_channel_manager.logging]
 channel_events = true  # Log details about the channel when it is created, deleted, or updated

@@ -98,6 +98,10 @@
                 }
             }
         },
+        "/privacy_policy": {
+            "name": "polityka_prywatności",
+            "description": "Pobierz politykę prywatności serwera."
+        },
         "/role_assignment": {
             "name": "przypisanie_ról",
             "/send": {
@@ -108,6 +112,56 @@
                         "name": "podgląd",
                         "description": "Czy wyświetlić jako podgląd?"
                     }
+                }
+            },
+            "/get_configuration": {
+                "name": "pobierz_konfiguracje",
+                "description": "Pobierz konfigurację przypisania ról."
+            },
+            "/set_configuration": {
+                "name": "ustaw_konfiguracje",
+                "description": "Ustaw konfigurację przypisania ról.",
+                "#params": {
+                    "attachment": {
+                        "name": "załącznik",
+                        "description": "Plik JSON z konfiguracją kalendarza."
+                    }
+                }
+            },
+            "/edit_configuration": {
+                "name": "edytuj_konfiguracje",
+                "description": "Edytuj konfigurację przypisania ról.",
+                "#params": {
+                    "indent": {
+                        "name": "wcięcie",
+                        "description": "Wielkość wcięcia w JSONie (domyślnie: {default})."
+                    }
+                }
+            }
+        },
+        "/verification": {
+            "name": "weryfikacja",
+            "/send": {
+                "name": "wyślij",
+                "description": "Wyślij wiadomość z instrukcjami weryfikacji.",
+                "#params": {
+                    "preview": {
+                        "name": "podgląd",
+                        "description": "Czy wyświetlić jako podgląd?"
+                    }
+                }
+            },
+            "/verify_request": {
+                "name": "zweryfikuj_prośbę",
+                "description": "Zweryfikuj prośbę o weryfikację.",
+                "#params": {
+                    "member_id": {
+                        "name": "id_członka",
+                        "description": "ID członka, którego prośba ma zostać zweryfikowana."
+                    }
+                },
+                "#responses": {
+                    "success": "Pomyślnie zweryfikowano członka {member.mention}."
                 }
             },
             "/get_configuration": {
@@ -176,6 +230,22 @@
                     "rate_limit_exceeded": "{channel.mention} Zmiana nazwy nie powiodła się.\nMożesz zmienić nazwę kanału głosowego maksymalnie 2 razy na 10 minut (ograniczenia Discorda).",
                     "success": "{channel.mention} Nazwa kanału głosowego została zmieniona."
                 }
+            }
+        },
+        "/whois": {
+            "name": "kim_jest",
+            "description": "Wyświetl informacje o użytkowniku.",
+            "#params": {
+                "user": {
+                    "name": "użytkownik",
+                    "description": "Imię, nazwisko, numer indeksu, nazwa, pseudonim lub ID użytkownika."
+                }
+            },
+            "#responses": {
+                "not_found": "Nie znaleziono użytkownika pasującego do `{query}`.",
+                "found_one": "Znaleziono użytkownika pasującego do `{query}`.",
+                "found_multiple_limited": "Znaleziono `{count}` użytkowników pasujących do `{query}`.\nPokazuję tylko pierwsze {limit}.",
+                "found_multiple": "Znaleziono `{count}` użytkowników pasujących do `{query}`."
             }
         }
     },
@@ -299,6 +369,194 @@
                         "location": {
                             "label": "Lokalizacja:",
                             "placeholder": "Lokalizacja wydarzenia"
+                        }
+                    }
+                }
+            }
+        },
+        "verification": {
+            "embeds": {
+                "already_verified": {
+                    "title": "Konto już zweryfikowane",
+                    "description": "Twoje konto zostało już zweryfikowane.\nJeśli uważasz, że to pomyłka, skontaktuj się z administracją serwera."
+                },
+                "code_sent": {
+                    "title": "Wysłano kod weryfikacyjny",
+                    "description": "Sprawdź swoją skrzynkę: `{email}`",
+                    "fields": {
+                        "continue": {
+                            "name": "Kliknij przycisk poniżej, aby kontynuować."
+                        }
+                    }
+                },
+                "data_summary": {
+                    "title": "Czy Twoje dane są poprawne?",
+                    "description": "Sprawdź i potwierdź poprawność swoich danych.",
+                    "fields": {
+                        "code": {
+                            "name": "Kod weryfikacyjny:",
+                            "value": {
+                                "valid": "Poprawny",
+                                "invalid": "Niepoprawny"
+                            }
+                        },
+                        "first_name": {
+                            "name": "Imię:"
+                        },
+                        "last_name": {
+                            "name": "Nazwisko:"
+                        },
+                        "index": {
+                            "name": "Numer indeksu:"
+                        },
+                        "study_info": {
+                            "name": "Informacje o studiach:"
+                        },
+                        "reason": {
+                            "name": "Powód:"
+                        }
+                    }
+                },
+                "error": {
+                    "title": "Ups! Wystąpił błąd",
+                    "description": "Wystąpił błąd podczas przetwarzania Twojego żądania.\nProszę spróbować ponownie.\nJeśli problem będzie się powtarzał, skontaktuj się z administracją serwera."
+                },
+                "index_taken": {
+                    "title": "Indeks zajęty",
+                    "description": "Podany przez Ciebie indeks jest już zajęty.\nJeśli weryfikujesz inne konto, użyj przycisku `{external_btn_label}`.\nJeśli uważasz, że to błąd, skontaktuj się z administracją serwera."
+                },
+                "max_attempts": {
+                    "title": "Zbyt wiele niepoprawnych prób kod",
+                    "description": "Osiągnąłeś maksymalną liczbę niepoprawnych prób kodu weryfikacyjnego."
+                },
+                "member_information": {
+                    "title": "Informacje o użytkowniku",
+                    "fields": {
+                        "first_name": "Imię:",
+                        "last_name": "Nazwisko:",
+                        "index": "Numer indeksu:",
+                        "study_info": "Informacje o studiach:",
+                        "reason": "Powód:",
+                        "verified_at": "Zweryfikowano:",
+                        "display_name": "Nazwa wyświetlana:",
+                        "discord_name": "Nazwa na Discordzie:",
+                        "id": "ID:",
+                        "roles": "Role:"
+                    },
+                    "other": {
+                        "na": "brak danych",
+                        "no": "Nie"
+                    }
+                },
+                "request_already_sent": {
+                    "title": "Prośba o weryfikację już wysłana",
+                    "description": "Twoja prośba o weryfikację została już wysłana.\nPoczekaj na rozpatrzenie jej przez Administratora."
+                },
+                "verification_request": {
+                    "title": "Nowa prośba o weryfikację",
+                    "fields": {
+                        "first_name": "Imię:",
+                        "last_name": "Nazwisko:",
+                        "index": "Numer indeksu:",
+                        "study_info": "Informacje o studiach:",
+                        "reason": "Powód:",
+                        "id": "ID:"
+                    }
+                },
+                "verification_request_sent": {
+                    "title": "Wysłano prośbę o weryfikację",
+                    "description": "Twoja prośba o weryfikację została wysłana.\nPoczekaj na rozpatrzenie jej przez Administratora.",
+                    "fields": {
+                        "continue": {
+                            "name": "Kliknij przycisk poniżej, aby kontynuować."
+                        }
+                    }
+                },
+                "verification_success": {
+                    "title": "Sukces!",
+                    "description": "Twoje konto zostało zweryfikowane."
+                }
+            },
+            "views": {
+                "code_sent": {
+                    "buttons": {
+                        "code_received": "Mam kod!",
+                        "resend_code": "Wyślij ponownie kod"
+                    }
+                },
+                "data_summary": {
+                    "buttons": {
+                        "confirm": "Potwierdź",
+                        "edit": "Edytuj"
+                    }
+                }
+            },
+            "modals": {
+                "index_input": {
+                    "title": "Rejestracja studenta"
+                },
+                "target_data_input": {
+                    "title": "Rejestracja studenta",
+                    "text_inputs": {
+                        "index": {
+                            "label": "Twój numer indeksu:"
+                        },
+                        "code": {
+                            "label": "Kod weryfikacyjny:",
+                            "placeholder": "wysłany na {email}"
+                        },
+                        "first_name": {
+                            "label": "Imię:",
+                            "placeholder": "Jan"
+                        },
+                        "last_name": {
+                            "label": "Nazwisko:",
+                            "placeholder": "Kowalski"
+                        }
+                    }
+                },
+                "internal_data_input": {
+                    "title": "Rejestracja studenta (gość)",
+                    "text_inputs": {
+                        "index": {
+                            "label": "Twój numer indeksu:"
+                        },
+                        "code": {
+                            "label": "Kod weryfikacyjny:",
+                            "placeholder": "wysłany na {email}"
+                        },
+                        "first_name": {
+                            "label": "Imię:",
+                            "placeholder": "Jan"
+                        },
+                        "last_name": {
+                            "label": "Nazwisko:",
+                            "placeholder": "Kowalski"
+                        },
+                        "study_info": {
+                            "label": "Informacje o studiach:",
+                            "placeholder": "wydział, kierunek, typ (lic/inż/mgr/jednolite), forma (stacjonarne/niestacjonarne), rocznik"
+                        },
+                        "reason": {
+                            "label": "Powód:",
+                            "placeholder": "Jestem studentem niższego roku i chciałbym uzyskać dostęp do waszych materiałów dydaktycznych."
+                        }
+                    }
+                },
+                "external_data_input": {
+                    "title": "Rejestracja gościa",
+                    "text_inputs": {
+                        "first_name": {
+                            "label": "Imię:",
+                            "placeholder": "Jan"
+                        },
+                        "last_name": {
+                            "label": "Nazwisko:",
+                            "placeholder": "Kowalski"
+                        },
+                        "reason": {
+                            "label": "Powód:",
+                            "placeholder": "Studiuję na uniwersytecie X i chciałbym uzyskać dostęp do waszych materiałów dydaktycznych."
                         }
                     }
                 }

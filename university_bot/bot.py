@@ -39,12 +39,12 @@ from university_bot.mixins.cog import SetupMixin
 from university_bot.utils.exceptions import format_exception_chain
 from university_bot.utils.localization import Localization
 
-from .config import BasicConfig, ConfigLoader, TemporaryFilesConfig
+from .config import BasicConfig, ConfigLoader
 from .database import DatabaseConfig, DatabaseController
 from .utils.logger import configure_logger
 
 if TYPE_CHECKING:
-    from university_bot.config import BotConfig
+    from .config import BotConfig, TemporaryFilesConfig
 
 
 __all__ = ("UniversityBot",)

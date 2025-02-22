@@ -166,6 +166,14 @@ class LoggerConfig(BaseModel):
     filename_format: str = Field(default="%Y-%m-%d_%H-%M-%S.log")
     traceback_in_console: bool = Field(default=True)
 
+    @field_validator("directory", mode="before")
+    @classmethod
+    def _validate_directory(cls, value: Path | str) -> Path:
+        path = Path(value) if not isinstance(value, Path) else value
+        path.mkdir(parents=True, exist_ok=True)
+        ConfigUtils.validate_data_directory(path)
+        return path
+
 
 class ConfigLoader:
     """A class to load configurations from a file.

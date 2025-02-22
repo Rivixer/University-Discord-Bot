@@ -298,15 +298,16 @@ class ConfigUtils(ABC):
     """A class containing utility methods for configuration files."""
 
     @staticmethod
-    def validate_data_filepath(path: Path, extension: str) -> None:
+    def validate_data_filepath(path: Path, extension: str | None) -> None:
         """Validates the data file path.
 
         Parameters
         ----------
         path: :class:`Path`
             The path to validate.
-        extension: :class:`str`
+        extension: :class:`str` | `None`
             The extension of the file including the dot (e.g. '.json').
+            If `None`, the extension is not checked.
 
         Raises
         ------
@@ -317,13 +318,13 @@ class ConfigUtils(ABC):
             - If the directory or file is ambiguously named with the extension.
         """
 
-        if path.name == extension:
+        if extension is not None and path.name == extension:
             raise ValueError(
                 "The path cannot point to a directory "
                 f"or a file ambiguously named {extension}."
             )
 
-        if (suffix := path.suffix) != extension:
+        if extension is not None and (suffix := path.suffix) != extension:
             raise ValueError(
                 f"The file must have a {extension} extension. Found: {suffix}"
             )

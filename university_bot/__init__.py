@@ -20,7 +20,7 @@ __title__ = "University-Discord-Bot"
 __author__ = "Wiktor Jaworski"
 __license__ = "MIT"
 __copyright__ = "Copyright 2023-2025 Wiktor Jaworski"
-__version__ = "0.10.0-alpha"
+__version__ = "0.10.0-beta"
 
 # pyright: reportUnusedImport=false
 

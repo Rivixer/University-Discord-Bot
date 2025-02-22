@@ -9,9 +9,17 @@ from nextcord import TextChannel, Thread
 from nextcord.errors import Forbidden, HTTPException, InvalidData, NotFound
 
 if TYPE_CHECKING:
-    from nextcord import Message
+    from nextcord import Guild, Member, Message
 
     from university_bot import UniversityBot
+
+__all__ = (
+    "ResourceFetchFailed",
+    "fetch_channel",
+    "fetch_guild_member",
+    "fetch_message",
+    "get_or_fetch_guild_member",
+)
 
 
 class ResourceFetchFailed(Exception):
@@ -28,6 +36,75 @@ class ResourceFetchFailed(Exception):
     def __init__(self, resource: str, message: str, *args: object) -> None:
         self.resource = resource
         super().__init__(message, *args)
+
+
+async def get_or_fetch_guild_member(guild: Guild, member_id: int) -> Member:
+    """|coro|
+
+    Tries to get a guild member from the cache, and fetches it if not found.
+
+    Parameters
+    ----------
+    bot: :class:`.UniversityBot`
+        The bot instance.
+    member_id: :class:`int`
+        The ID of the member to fetch.
+
+    Returns
+    -------
+    :class:`nextcord.Member`
+        The fetched member.
+
+    Raises
+    ------
+    ResourceFetchFailed
+        - If the member does not exist.
+        - If the bot does not have permission to access the member.
+        - If an error occurred while fetching the member.
+    """
+    if (member := guild.get_member(member_id)) is None:
+        member = await fetch_guild_member(guild, member_id)
+    return member
+
+
+async def fetch_guild_member(guild: Guild, member_id: int) -> Member:
+    """|coro|
+
+    Fetches a member from the guild.
+
+    Parameters
+    ----------
+    bot: :class:`.UniversityBot`
+        The bot instance.
+    member_id: :class:`int`
+        The ID of the member to fetch.
+
+    Returns
+    -------
+    :class:`nextcord.Member`
+        The fetched member.
+
+    Raises
+    ------
+    ResourceFetchFailed
+        - If the member does not exist.
+        - If the bot does not have permission to access the member.
+        - If an error occurred while fetching the member.
+    """
+    try:
+        return await guild.fetch_member(member_id)
+    except NotFound as e:
+        raise ResourceFetchFailed(
+            "member", f"Member {member_id} does not exist in guild."
+        ) from e
+    except Forbidden as e:
+        raise ResourceFetchFailed(
+            "member", f"Permission denied for member {member_id}."
+        ) from e
+    except HTTPException as e:
+        raise ResourceFetchFailed(
+            "member", f"An error occurred while fetching member {member_id}: {e}"
+        ) from e
 
 
 async def fetch_channel(bot: UniversityBot, channel_id: int) -> TextChannel | Thread:
