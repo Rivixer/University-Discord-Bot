@@ -104,12 +104,18 @@ class TemporaryFilesConfig(BaseModel):
 
     @contextmanager
     def context(
-        self, suffix: str = "", prefix: str = "tmp"
+        self,
+        dir_: Path | str | None = None,
+        suffix: str = "",
+        prefix: str = "tmp",
     ) -> Generator[Path, None, None]:
         """A context manager to create and manage a temporary file.
 
         Parameters
         ----------
+        dir_: :class:`Path` | :class:`str` | `None`
+            The directory to create the temporary file in.
+            If `None`, the default directory is used.
         suffix: :class:`str`
             A suffix for the temporary file (e.g., `.json`).
         prefix: :class:`str`
@@ -132,7 +138,7 @@ class TemporaryFilesConfig(BaseModel):
         try:
             temp_file = Path(
                 tempfile.NamedTemporaryFile(
-                    dir=self.directory,
+                    dir=dir_ or self.directory,
                     delete=False,
                     suffix=suffix,
                     prefix=prefix,

@@ -49,7 +49,9 @@ class DataConfigBaseModel(BaseModel, ABC):
         """
 
         try:
-            with bot.temporary_files_config.context() as ctx:
+            with bot.temporary_files_config.context(
+                filepath.parent if isinstance(filepath, Path) else None
+            ) as ctx:
                 with ctx.open("w", encoding="utf-8") as f:
                     json.dump(self.model_dump(), f, indent=4)
                     f.flush()

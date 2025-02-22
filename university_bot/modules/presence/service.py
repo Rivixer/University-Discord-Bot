@@ -147,7 +147,9 @@ class PresenceService:
 
     def _save_data(self) -> None:
         try:
-            with self.bot.temporary_files_config.context() as temp_file:
+            with self.bot.temporary_files_config.context(
+                self.config.data_filepath.parent
+            ) as temp_file:
                 with temp_file.open("w", encoding="utf-8") as f:
                     json.dump(self.data.model_dump(), f, indent=4)
                     f.flush()
