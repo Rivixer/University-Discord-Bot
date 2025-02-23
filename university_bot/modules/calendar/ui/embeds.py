@@ -71,7 +71,7 @@ class CalendarEmbed(Embed):
         embed_dict = data.embed.to_dict()
         formatted_embed_dict = format_embed_values(
             embed_dict,
-            updated=data.format_modified(data.modified or datetime.datetime.now()),
+            modified=data.format_modified(data.modified or datetime.datetime.now()),
         )
 
         self = super().from_dict(formatted_embed_dict)
