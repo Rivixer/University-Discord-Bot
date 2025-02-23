@@ -462,6 +462,7 @@ class MemberInformationEmbed(LocalizedMixin, Embed):
         roles = sorted(
             [role for role in member.roles if not role.is_default()],
             key=lambda i: i.position,
+            reverse=True,
         )
 
         if data.verified_at and roles:
