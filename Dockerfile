@@ -1,5 +1,5 @@
 # Use the official Python image from the Docker Hub
-FROM python:3.10.14-slim-bookworm
+FROM python:3.12.9-slim-bookworm
 
 # Set the working directory in the container
 WORKDIR /app
