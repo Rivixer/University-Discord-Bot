@@ -14,7 +14,7 @@ import asyncio
 from abc import ABC, abstractmethod
 from logging import Logger
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, TypeVar
+from typing import TYPE_CHECKING, Any, Literal, TypeVar, overload
 
 from nextcord import HTTPException
 from nextcord.ui import View
@@ -125,31 +125,60 @@ class StaticMessageMixin[HandlerT, DataT: StaticMessageDataConfig](ABC):
         self.data = data
         self.__logger = logger
 
-    async def _fetch_message(self, *, missing_ok: bool = False) -> Message | None:
+    @overload
+    async def _fetch_message(self, *, missing_ok: Literal[True]) -> Message | None:
         """|coro|
 
         Fetches the static message from Discord.
 
         This method retrieves the static message using the stored channel and message IDs.
-        If either ID is missing and ``missing_ok`` is False,
-        a :exc:`ResourceFetchFailed` exception is raised.
+        If IDs are missing, it returns None.
 
         Parameters
         ----------
-        missing_ok: :class:`bool` | `None`
-            If True, returns None when the channel or message ID is missing (default is False).
+        missing_ok: Literal[True]
+            A flag indicating that the method should return None
+            if the channel ID or message ID is missing.
 
         Returns
         -------
         :class:`nextcord.Message` | `None`
-            The fetched message if available, or None if the IDs are missing
-            and ``missing_ok`` is True.
+            The fetched message if available, or None if the IDs are missing.
 
         Raises
         ------
         ResourceFetchFailed
-            If either the channel or message ID is missing and ``missing_ok`` is False.
+            If the channel or message cannot be fetched.
         """
+
+    @overload
+    async def _fetch_message(self, *, missing_ok: Literal[False] = False) -> Message:
+        """|coro|
+
+        Fetches the static message from Discord.
+
+        This method retrieves the static message using the stored channel and message IDs.
+
+        Parameters
+        ----------
+        missing_ok: Literal[False]
+            A flag indicating that the method should raise an exception
+            if the channel ID or message ID is missing.
+
+        Returns
+        -------
+        :class:`nextcord.Message`
+            The fetched message.
+
+        Raises
+        ------
+        ResourceFetchFailed
+            If the channel ID or message ID is missing.
+            If the channel or message cannot be fetched.
+        """
+
+    async def _fetch_message(self, *, missing_ok: bool = False) -> Message | None:
+        """Fetches the static message from Discord."""
         channel_id = self.data.channel_id
         message_id = self.data.message_id
 

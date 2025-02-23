@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import datetime
 from typing import TYPE_CHECKING
 
 from babel.dates import format_date
@@ -10,9 +11,9 @@ from nextcord import Color, Embed
 
 from university_bot import Localization
 from university_bot.mixins import LocalizedMixin
+from university_bot.utils import format_embed_values
 
 if TYPE_CHECKING:
-    import datetime
 
     from nextcord import Locale
 
@@ -66,7 +67,14 @@ class CalendarEmbed(Embed):
         :class:`.CalendarEmbed`
             The created calendar embed.
         """
-        self = super().from_dict(data.embed.to_dict())
+
+        embed_dict = data.embed.to_dict()
+        formatted_embed_dict = format_embed_values(
+            embed_dict,
+            updated=data.format_modified(data.modified or datetime.datetime.now()),
+        )
+
+        self = super().from_dict(formatted_embed_dict)
 
         for event_date, events in sorted_grouped_events.items():
             formatted_date = format_date(

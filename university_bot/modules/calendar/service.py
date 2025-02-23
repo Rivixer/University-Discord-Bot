@@ -226,7 +226,9 @@ class CalendarService(
         async with self.bot.database.async_session_factory() as session:
             async with session.begin():
                 session.add(event_dto)
-                _logger.debug("Added event to database: %s", event)
+
+        self._update_last_modified()
+        _logger.debug("Added event to database: %s", event)
 
     async def delete_event(self, event: Event) -> None:
         """|coro|
@@ -245,7 +247,9 @@ class CalendarService(
                     _logger.warning("Event with id %s not found in database.", event.id)
                     return
                 await session.delete(event_dto)
-                _logger.debug("Deleted event from database: %s", event)
+
+        self._update_last_modified()
+        _logger.debug("Deleted event from database: %s", event)
 
     async def update_event(self, event_id: str, raw_event: RawEvent) -> None:
         """|coro|
@@ -273,8 +277,8 @@ class CalendarService(
                 for key in orig_event.__table__.columns.keys():
                     setattr(orig_event, key, getattr(event, key))
 
-                await session.commit()
-                _logger.debug("Updated event ID %s with new values.", event_id)
+        self._update_last_modified()
+        _logger.debug("Updated event ID %s with new values.", event_id)
 
     async def get_events(
         self, visibility: EventVisibility = EventVisibility.ALL
@@ -363,3 +367,13 @@ class CalendarService(
             embed=CalendarEmbed.create(self.data, sorted_grouped_events),
             view=None,
         )
+
+    def _update_last_modified(self) -> None:
+        """Updates the last modified date and time.
+
+        This method sets the `updated` attribute of the calendar data
+        to the current date and time, and then saves the updated data
+        to the configuration file.
+        """
+        self.data.modified = datetime.datetime.now(datetime.timezone.utc)
+        self.save_data()

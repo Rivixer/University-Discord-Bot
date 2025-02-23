@@ -24,7 +24,7 @@ if TYPE_CHECKING:
         InternalDataSummaryPayload,
         TargetDataSummaryPayload,
     )
-    from ..config import AdditionalSummaryFieldConfig
+    from ..config import AdditionalSummaryFieldConfig, WhoisConfig
     from ..models import MatchingMember
 
 
@@ -405,7 +405,12 @@ class VerificationRequestEmbed(LocalizedMixin, Embed):
 class MemberInformationEmbed(LocalizedMixin, Embed):
     """Embed for showing member information."""
 
-    def __init__(self, locale: Locale, matching_member: MatchingMember) -> None:
+    def __init__(
+        self,
+        locale: Locale,
+        matching_member: MatchingMember,
+        whois_config: WhoisConfig,
+    ) -> None:
         LocalizedMixin.__init__(self, locale, _loc.get_group("member_information"))
 
         member = matching_member.member
@@ -460,8 +465,8 @@ class MemberInformationEmbed(LocalizedMixin, Embed):
         )
 
         if data.verified_at and roles:
-            verified_at_value = data.verified_at.astimezone().strftime(
-                "%Y-%m-%d %H:%M:%S"
+            verified_at_value = whois_config.format_verified_at(
+                data.verified_at, locale
             )
         elif roles:
             verified_at_value = na_loc

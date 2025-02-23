@@ -328,9 +328,10 @@ class VerificationHandler(ConfigurationHandlerMixin):
             limit=limit,
         )
 
+        whois_config = self.service.config.whois
         locale = self._get_locale_from_interaction(interaction)
         embeds: list[Embed] = [
-            MemberInformationEmbed(locale, m) for m in matching_members
+            MemberInformationEmbed(locale, m, whois_config) for m in matching_members
         ]
 
         try:

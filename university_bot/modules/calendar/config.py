@@ -7,17 +7,23 @@ import datetime
 import json
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Final, override
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from babel.core import Locale, UnknownLocaleError
-from babel.dates import format_date, format_time, parse_date, parse_time
+from babel.dates import (
+    format_date,
+    format_datetime,
+    format_time,
+    parse_date,
+    parse_time,
+)
 from nextcord import Color, Embed
 from pydantic import BaseModel, ConfigDict, ValidationInfo, field_validator
 
+from university_bot import ConfigUtils, get_logger
 from university_bot.mixins.static_message import StaticMessageDataConfig
-from university_bot.utils2 import ConfigUtils
 
 if TYPE_CHECKING:
-
     from university_bot import EmbedDict
 
 __all__ = (
@@ -26,6 +32,8 @@ __all__ = (
     "EventFieldLimits",
     "EventReprFormat",
 )
+
+_logger = get_logger(__name__)
 
 
 class EventFieldLimits:  # pylint: disable=too-few-public-methods
@@ -71,6 +79,9 @@ class CalendarDataConfig(StaticMessageDataConfig):
     channel_id: int | None
     content: str | None = None
     locale: str = "en"
+    timezone_key: str = "UTC"
+    modified: datetime.datetime | None = None
+    modified_format: str = "dd.MM.yyyy HH:mm"
     date_input_format: str = "dd.MM.yyyy"
     date_repr_format: str = "dd.MM.yyyy (EEEE)"
     time_input_format: str = "HH.mm"
@@ -96,6 +107,36 @@ class CalendarDataConfig(StaticMessageDataConfig):
             Locale.parse(value)
         except UnknownLocaleError as e:
             raise ValueError(f"Invalid locale: {value}") from e
+        return value
+
+    @field_validator("timezone_key", mode="before")
+    @classmethod
+    def _validate_timezone_key(cls, value: str) -> str:
+        try:
+            ZoneInfo(value)
+        except ZoneInfoNotFoundError as e:
+            raise ValueError(f"Invalid timezone: {value}") from e
+        return value
+
+    @field_validator("modified", mode="before")
+    @classmethod
+    def _validate_modified(cls, value: str | None) -> datetime.datetime | None:
+        if value is None:
+            return None
+        try:
+            return datetime.datetime.fromisoformat(value)
+        except ValueError as e:
+            _logger.warning(
+                "Invalid modified datetime: %s. Setting current datetime.", e
+            )
+            return datetime.datetime.now()
+
+    @field_validator("modified_format", mode="after")
+    @staticmethod
+    def _validate_modified_format(value: str, info: ValidationInfo) -> str:
+        locale = info.data.get("locale", "en")
+        sample_date = datetime.date.today()
+        format_datetime(sample_date, format=value, locale=locale)
         return value
 
     @field_validator("date_input_format", mode="after")
@@ -153,7 +194,31 @@ class CalendarDataConfig(StaticMessageDataConfig):
         except KeyError:
             pass
 
+        data["modified"] = data["modified"].isoformat() if data["modified"] else None
+
         return data
+
+    @property
+    def timezone(self) -> ZoneInfo:
+        """The timezone of the calendar."""
+        return ZoneInfo(self.timezone_key)
+
+    def format_modified(self, dt: datetime.datetime) -> str:
+        """Formats the modified date and time.
+
+        Parameters
+        ----------
+        dt: :class:`datetime.datetime`
+            The date and time to format.
+
+        Returns
+        -------
+        :class:`str`
+            The formatted date and time.
+        """
+        return format_datetime(
+            dt, format=self.modified_format, locale=self.locale, tzinfo=self.timezone
+        )
 
     def format_input_date(self, date: datetime.date) -> str:
         """Formats the input date.
@@ -264,7 +329,7 @@ class CalendarDataConfig(StaticMessageDataConfig):
             content=None,
             embed=Embed(
                 title="Calendar",
-                description="This is a calendar.",
+                description="Last modified: {modified}",
                 color=Color.blurple(),
             ),
         )

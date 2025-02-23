@@ -97,6 +97,11 @@ internal = 0            # Retention period for internal members in days.
 external = 0            # Retention period for external members in days.
 external_request = 31   # Optional. Retention period for external members with a request in days.
 
+[verification.whois]
+verified_at_format = "yyyy-MM-dd HH:mm:ss"  # Format for the "verified_at" field.
+verified_at_timezone_key = "UTC"  # Timezone key for the "verified_at" field.
+
+
 [voice_channel_manager]
 enabled = true            # Enable voice channel manager.
 managed_category_id = 0  # Change! Must be a valid category ID.

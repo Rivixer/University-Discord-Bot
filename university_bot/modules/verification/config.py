@@ -3,11 +3,14 @@
 
 from __future__ import annotations
 
+import datetime
 import json
 import os
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Final, override
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
+from babel.dates import format_datetime
 from nextcord import ButtonStyle, Color, Embed, Locale
 from pydantic import BaseModel, ConfigDict, EmailStr, field_validator, model_validator
 
@@ -36,6 +39,7 @@ __all__ = (
     "AssignedRolesConfig",
     "VerificationDataConfig",
     "VerificationButtonConfig",
+    "WhoisConfig",
 )
 
 
@@ -64,6 +68,7 @@ class VerificationConfig(BaseModel):
     additional_summary_field: AdditionalSummaryFieldConfig | None
     privacy_policy: PrivacyPolicyConfig | None
     retention_period: RetentionPeriodConfig
+    whois: WhoisConfig
 
     @field_validator("data_filepath", mode="before")
     @classmethod
@@ -418,7 +423,9 @@ class AssignedRolesConfig(BaseModel):
 
     @property
     def external_request_roles(self) -> set[Role]:
-        """Roles for a verified user who is a student from another university and requested access."""
+        """Roles for a verified user who is a student
+        from another university and requested access.
+        """
         if self._external_request_roles is None:
             raise ValueError("Roles are not set.")
         return self._external_request_roles
@@ -574,3 +581,46 @@ class VerificationButtonConfig(BaseModel):
     enabled: bool
     label: str
     style: ButtonStyle
+
+
+class WhoisConfig(BaseModel):
+    """The configuration of the whois command."""
+
+    verified_at_format: str = "yyyy-MM-dd HH:mm:ss"
+    verified_at_timezone_key: str = "UTC"
+
+    @field_validator("verified_at_timezone_key", mode="before")
+    @classmethod
+    def _validate_verified_at_timezone_key(cls, value: str) -> str:
+        try:
+            ZoneInfo(value)
+        except ZoneInfoNotFoundError as e:
+            raise ValueError(f"Invalid timezone: {value}") from e
+        return value
+
+    @property
+    def verified_at_timezone(self) -> ZoneInfo:
+        """The timezone of the calendar."""
+        return ZoneInfo(self.verified_at_timezone_key)
+
+    def format_verified_at(self, dt: datetime.datetime, locale: Locale) -> str:
+        """Formats the verified at datetime.
+
+        Parameters
+        ----------
+        dt: :class:`datetime.datetime`
+            The datetime to format.
+        locale: :class:`nextcord.Locale`
+            The locale to format the datetime with.
+
+        Returns
+        -------
+        :class:`str`
+            The formatted datetime.
+        """
+        return format_datetime(
+            dt,
+            format=self.verified_at_format,
+            locale=locale,
+            tzinfo=self.verified_at_timezone,
+        )
