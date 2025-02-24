@@ -621,6 +621,6 @@ class WhoisConfig(BaseModel):
         return format_datetime(
             dt,
             format=self.verified_at_format,
-            locale=locale,
+            locale=locale.split("-")[0],
             tzinfo=self.verified_at_timezone,
         )
