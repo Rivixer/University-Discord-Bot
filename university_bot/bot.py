@@ -23,6 +23,7 @@ import logging
 import os
 import sys
 import time
+from collections import deque
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -36,6 +37,7 @@ from pydantic_core import ValidationError
 
 from university_bot.exceptions.cog import LoadCogError
 from university_bot.mixins.cog import SetupMixin
+from university_bot.utils.cogs import ENTRY_COG_ATTR, LOAD_AFTER_ATTR
 from university_bot.utils.exceptions import format_exception_chain
 from university_bot.utils.localization import Localization
 
@@ -186,8 +188,8 @@ class UniversityBot(Bot):
             self._logger.error("Modules path does not exist: %s", modules_path)
             return
 
-        cogs_to_load: list[tuple[str, str]] = []
-
+        # TODO: Refactor
+        cogs_to_load: dict[type[Cog], list[type[Cog]]] = {}
         for module_name in os.listdir(modules_path):
             module_path = modules_path / module_name
 
@@ -198,37 +200,57 @@ class UniversityBot(Bot):
 
             if not cog_file.is_file():
                 self._logger.warning(
-                    "Cog file for module '%s' is missing, skipping.",
-                    module_name,
+                    "Cog file for module '%s' is missing, skipping.", module_name
                 )
                 continue
 
             cog_config = self.config.get(module_name)
             if not cog_config:
                 self._logger.warning(
-                    "Config for cog '%s' is missing, skipping.",
-                    module_name,
+                    "Config for cog '%s' is missing, skipping.", module_name
                 )
                 continue
 
             enabled = cog_config.get("enabled", True)
             if not enabled:
                 self._logger.info(
-                    "Cog '%s' is disabled in configuration, skipping.",
-                    module_name,
+                    "Cog '%s' is disabled in configuration, skipping.", module_name
                 )
                 continue
 
             cog_import_path = f"university_bot.modules.{module_name}.cog"
-            cogs_to_load.append((cog_import_path, module_name))
+
+            module = importlib.import_module(cog_import_path)
+            cog_classes = [
+                cls
+                for cls in vars(module).values()
+                if inspect.isclass(cls) and issubclass(cls, Cog) and cls is not Cog
+            ]
+
+            cog_class = (
+                [cls for cls in cog_classes if getattr(cls, ENTRY_COG_ATTR, False)]
+                or cog_classes
+                or [None]
+            )[0]
+
+            if cog_class is None:
+                self._logger.error(
+                    "Cog '%s' couldn't be loaded! Cog class not found.",
+                    module_name,
+                )
+                continue
+
+            cogs_to_load[cog_class] = getattr(cog_class, LOAD_AFTER_ATTR, [])
 
         if not cogs_to_load:
             self._logger.info("No cogs to load.")
             self._cogs_loaded = True
             return
 
-        tasks = [self.load_cog(import_path, name) for import_path, name in cogs_to_load]
-        await asyncio.gather(*tasks)
+        sorted_cogs = self._sort_cogs_by_dependencies(cogs_to_load)
+
+        for cog_cls in sorted_cogs:
+            await self.load_cog(cog_cls)
 
         # TODO: Remove after refactoring
         path = Path("university_bot/cogs")
@@ -249,7 +271,7 @@ class UniversityBot(Bot):
         self._logger.info("Cogs loaded.")
         self._cogs_loaded = True
 
-    async def load_cog(self, name: str, display_name: str | None = None) -> bool:
+    async def load_cog(self, cog_cls: type[Cog]) -> bool:
         """Loads the cog.
 
         Parameters
@@ -266,24 +288,7 @@ class UniversityBot(Bot):
         start_time = time.time()
 
         try:
-            module = importlib.import_module(name)
-            cog_class = next(
-                (
-                    cls
-                    for cls in vars(module).values()
-                    if inspect.isclass(cls) and issubclass(cls, Cog) and cls is not Cog
-                ),
-                None,
-            )
-
-            if cog_class is None:
-                self._logger.error(
-                    "Cog '%s' couldn't be loaded! Cog class not found.",
-                    display_name or name,
-                )
-                return False
-
-            cog = cog_class(self)
+            cog = cog_cls(self)
 
             if isinstance(cog, SetupMixin):
                 await cog.setup(self)
@@ -292,7 +297,7 @@ class UniversityBot(Bot):
 
             load_time = (time.time() - start_time) * 1000
             self._logger.info(
-                "Cog '%s' has been loaded! (%.2fms)", display_name or name, load_time
+                "Cog '%s' has been loaded! (%.2fms)", cog.__cog_name__, load_time
             )
             return True
         except (
@@ -305,11 +310,41 @@ class UniversityBot(Bot):
         ) as e:
             self._logger.error(
                 "Cog '%s' couldn't be loaded! %s",
-                display_name,
+                cog_cls.__cog_name__,
                 format_exception_chain(e, sep="\n"),
                 exc_info=True,
             )
             return False
+
+    def _sort_cogs_by_dependencies(
+        self, cogs: dict[type[Cog], list[type[Cog]]]
+    ) -> list[type[Cog]]:
+        sorted_list: list[type[Cog]] = []
+
+        in_degree = {cog: 0 for cog in cogs}
+        dependents: dict[type[Cog], set[type[Cog]]] = {cog: set() for cog in cogs}
+
+        for cog, deps in cogs.items():
+            for dep in deps:
+                if dep in in_degree:
+                    in_degree[cog] += 1
+                    dependents[dep].add(cog)
+
+        queue = deque([cog for cog, degree in in_degree.items() if degree == 0])
+
+        while queue:
+            current = queue.popleft()
+            sorted_list.append(current)
+
+            for dependent in dependents[current]:
+                in_degree[dependent] -= 1
+                if in_degree[dependent] == 0:
+                    queue.append(dependent)
+
+        if len(sorted_list) != len(cogs):
+            raise RuntimeError("Cyclic dependencies detected!")
+
+        return sorted_list
 
     def unload_cog(self, name: str, display_name: str | None = None) -> bool:
         """Unloads the cog.
