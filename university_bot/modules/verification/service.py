@@ -869,6 +869,8 @@ class VerificationService(
             member = guild_members_dict.get(dto.user_id)
             if member is None:
                 continue
+            if dto.index == query:
+                return [MatchingMember(dto, member)]
             members.append(MatchingMember(dto, member))
 
         index_result = [m for m in members if m.verification_data.index == query]
