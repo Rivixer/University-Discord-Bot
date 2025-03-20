@@ -134,6 +134,15 @@ class VerificationCog(SetupMixin, Cog):
     async def _privacy_policy(self, interaction: Interaction) -> None:
         await self.handler.send_privacy_policy(interaction)
 
+    @Localization.apply_localizations
+    @nextcord.slash_command(
+        name="about_me",
+        description="Get information about yourself.",
+    )
+    @catch_interaction_exceptions([VerificationError])
+    async def _about_me(self, interaction: Interaction) -> None:
+        await self.handler.handle_about_me(interaction)
+
     @Cog.listener(name="on_member_remove")
     async def _on_member_remove(self, member: nextcord.Member) -> None:
         await self.handler.handle_member_remove(member)

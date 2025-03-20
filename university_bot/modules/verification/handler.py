@@ -367,6 +367,46 @@ class VerificationHandler(ConfigurationHandlerMixin):
         except (OSError, HTTPException) as e:
             raise VerificationError("Failed to send privacy policy file.") from e
 
+    async def handle_about_me(self, interaction: Interaction) -> None:
+        """|coro|
+
+        Handles the about me command.
+
+        Parameters
+        ----------
+        interaction: :class:`nextcord.Interaction`
+            The interaction that triggered the command.
+
+        Raises
+        ------
+        VerificationError
+            - If deferring the response fails.
+            - If the member is not found.
+            - If sending the about me message fails.
+        """
+        user_id = interaction.user.id  # type: ignore
+        try:
+            await interaction.response.defer(ephemeral=True)
+        except HTTPException as e:
+            raise VerificationError("Failed to defer response.") from e
+
+        for member in await self.service.get_matching_members(str(user_id)):
+            if member.member.id == user_id:
+                break
+        else:
+            raise VerificationError("Member not found.")
+
+        whois_config = self.service.config.whois
+        locale = self._get_locale_from_interaction(interaction)
+        embed = MemberInformationEmbed(locale, member, whois_config)
+
+        try:
+            await interaction.edit_original_message(embed=embed)
+            await asyncio.sleep(180)
+            await interaction.delete_original_message()
+        except HTTPException as e:
+            raise VerificationError("Failed to send about me message.") from e
+
     async def verify_request(self, interaction: Interaction, raw_user_id: str) -> None:
         """|coro|
 

@@ -1,5 +1,9 @@
 {
     "commands": {
+        "/about_me": {
+            "name": "o_mnie",
+            "description": "Wyświetl informacje o sobie."
+        },
         "/calendar": {
             "name": "kalendarz",
             "/send": {
@@ -20,11 +24,11 @@
                 "description": "Wyświetl menu kalendarza."
             },
             "/get_configuration": {
-                "name": "pobierz_konfiguracje",
+                "name": "pobierz_konfigurację",
                 "description": "Pobierz konfigurację kalendarza."
             },
             "/set_configuration": {
-                "name": "ustaw_konfiguracje",
+                "name": "ustaw_konfigurację",
                 "description": "Ustaw konfigurację kalendarza.",
                 "#params": {
                     "attachment": {
@@ -34,7 +38,7 @@
                 }
             },
             "/edit_configuration": {
-                "name": "edytuj_konfiguracje",
+                "name": "edytuj_konfigurację",
                 "description": "Edytuj konfigurację kalendarza.",
                 "#params": {
                     "indent": {
@@ -102,6 +106,33 @@
             "name": "polityka_prywatności",
             "description": "Pobierz politykę prywatności serwera."
         },
+        "/reminder": {
+            "name": "przypomnienia",
+            "/get_configuration": {
+                "name": "pobierz_konfigurację",
+                "description": "Pobierz konfigurację przypomnień."
+            },
+            "/set_configuration": {
+                "name": "ustaw_konfigurację",
+                "description": "Ustaw konfigurację przypomnień.",
+                "#params": {
+                    "attachment": {
+                        "name": "załącznik",
+                        "description": "Plik JSON z konfiguracją przypomnień."
+                    }
+                }
+            },
+            "/edit_configuration": {
+                "name": "edytuj_konfigurację",
+                "description": "Edytuj konfigurację przypomnień.",
+                "#params": {
+                    "indent": {
+                        "name": "wcięcie",
+                        "description": "Wielkość wcięcia w JSONie (domyślnie: {default})."
+                    }
+                }
+            }
+        },
         "/role_assignment": {
             "name": "przypisanie_ról",
             "/send": {
@@ -115,11 +146,11 @@
                 }
             },
             "/get_configuration": {
-                "name": "pobierz_konfiguracje",
+                "name": "pobierz_konfigurację",
                 "description": "Pobierz konfigurację przypisania ról."
             },
             "/set_configuration": {
-                "name": "ustaw_konfiguracje",
+                "name": "ustaw_konfigurację",
                 "description": "Ustaw konfigurację przypisania ról.",
                 "#params": {
                     "attachment": {
@@ -129,7 +160,7 @@
                 }
             },
             "/edit_configuration": {
-                "name": "edytuj_konfiguracje",
+                "name": "edytuj_konfigurację",
                 "description": "Edytuj konfigurację przypisania ról.",
                 "#params": {
                     "indent": {
@@ -165,11 +196,11 @@
                 }
             },
             "/get_configuration": {
-                "name": "pobierz_konfiguracje",
+                "name": "pobierz_konfigurację",
                 "description": "Pobierz konfigurację przypisania ról."
             },
             "/set_configuration": {
-                "name": "ustaw_konfiguracje",
+                "name": "ustaw_konfigurację",
                 "description": "Ustaw konfigurację przypisania ról.",
                 "#params": {
                     "attachment": {
@@ -179,7 +210,7 @@
                 }
             },
             "/edit_configuration": {
-                "name": "edytuj_konfiguracje",
+                "name": "edytuj_konfigurację",
                 "description": "Edytuj konfigurację przypisania ról.",
                 "#params": {
                     "indent": {
