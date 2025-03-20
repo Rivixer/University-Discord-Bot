@@ -8,10 +8,15 @@ import uuid
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
+from babel.dates import format_date
+
 from .dto import EventDTO
 
 if TYPE_CHECKING:
+    from nextcord import Locale
+
     from .config import CalendarDataConfig
+    from ..reminder import RawReminder, Reminder, ReminderService
 
 __all__ = (
     "Event",
@@ -20,7 +25,7 @@ __all__ = (
 
 
 @dataclass(slots=True, frozen=True)
-class Event:
+class Event:  # pylint: disable=too-many-instance-attributes
     """Represents an event in the calendar."""
 
     id: str
@@ -30,20 +35,41 @@ class Event:
     prefix: str | None
     location: str | None
     is_hidden: bool
+    reminders: list[Reminder] = field(default_factory=list)
 
     @staticmethod
     def compare_datetime_method(event1: Event, event2: Event) -> int:
         """Compares events by date and time."""
-        if event1.date != event2.date:
-            return (event1.date > event2.date) - (event1.date < event2.date)
-        if event1.time and event2.time:
-            return (event1.time > event2.time) - (event1.time < event2.time)
+        if event1.datetime < event2.datetime:
+            return -1
+        if event1.datetime > event2.datetime:
+            return 1
         return 0
 
     def __eq__(self, value: object) -> bool:
         if not isinstance(value, Event):
             return NotImplemented
         return self.id == value.id
+
+    @property
+    def datetime(self) -> datetime.datetime:
+        """:class:`datetime.datetime`: The date and time of the event.
+
+        If the time is not provided, the time is set to midnight.
+        """
+        return (
+            datetime.datetime.combine(self.date, self.time)
+            if self.time
+            else datetime.datetime.combine(self.date, datetime.time.min)
+        )
+
+    @property
+    def is_all_day(self) -> bool:
+        """:class:`bool`: Whether the event is an all-day event.
+
+        An event is considered an all-day event if the time is not provided.
+        """
+        return self.time is None
 
     def to_dto(self) -> EventDTO:
         """Converts the event to a data transfer object."""
@@ -91,6 +117,7 @@ class Event:
             self.prefix,
             self.location,
             self.is_hidden,
+            [r.to_raw(config) for r in self.reminders],
         )
 
     def to_calendar_repr(
@@ -129,18 +156,42 @@ class Event:
 
         return "".join(parts)
 
+    async def fetch_reminders(self, service: ReminderService) -> None:
+        """Fetches the reminders associated with the event.
+
+        Parameters
+        ----------
+        service: :class:`.ReminderService`
+            The reminder service.
+        """
+        object.__setattr__(self, "reminders", await service.get_reminders(self.id))
+
 
 @dataclass(slots=True)
-class RawEvent:
+class RawEvent:  # pylint: disable=too-many-instance-attributes
     """Represents a raw event."""
 
     config: CalendarDataConfig
-    description: str | None = field(default=None)
-    date: str | None = field(default=None)
-    time: str | None = field(default=None)
-    prefix: str | None = field(default=None)
-    location: str | None = field(default=None)
-    is_hidden: bool = field(default=False)
+    description: str | None
+    date: str | None
+    time: str | None
+    prefix: str | None
+    location: str | None
+    is_hidden: bool
+    reminders: list[RawReminder] = field(default_factory=list)
+
+    @classmethod
+    def default(cls, config: CalendarDataConfig) -> RawEvent:
+        """Creates a default raw event."""
+        return cls(
+            config=config,
+            description=None,
+            date=None,
+            time=None,
+            prefix=None,
+            location=None,
+            is_hidden=False,
+        )
 
     def is_valid(self) -> bool:
         """Checks if the raw event is valid
@@ -215,6 +266,53 @@ class RawEvent:
         if not self.time:
             return None
         return self.config.parse_input_time(self.time)
+
+    @property
+    def parsed_datetime(self) -> datetime.datetime | None:
+        """:class:`datetime.datetime` | `None`:
+        The parsed date and time of the event.
+
+        If the time is not provided, the time is set to midnight.
+
+        If the date or time is invalid, ``None`` is returned.
+
+        Raises
+        ------
+        ValueError
+            If the date or time is invalid.
+        """
+        if not self.parsed_date:
+            return None
+
+        if not self.parsed_time:
+            return datetime.datetime.combine(self.parsed_date, datetime.time.min)
+
+        return datetime.datetime.combine(self.parsed_date, self.parsed_time)
+
+    @property
+    def is_all_day(self) -> bool:
+        """:class:`bool`: Whether the event is an all-day event.
+
+        An event is considered an all-day event if the time is not provided.
+        """
+        return self.time is None
+
+    def get_weekday(self, locale: Locale) -> str | None:
+        """Returns the weekday of the event.
+
+        Parameters
+        ----------
+        locale: :class:`nextcord.Locale`
+            The locale of the user.
+
+        Returns
+        -------
+        :class:`str` | `None`
+            The weekday of the event or `None` if the date is not provided or invalid.
+        """
+        if not self.is_date_valid() or not self.parsed_date:
+            return None
+        return format_date(self.parsed_date, "EEEE", locale=locale)
 
     def to_event(self, id_: str | None) -> Event:
         """Converts the raw event to an event.

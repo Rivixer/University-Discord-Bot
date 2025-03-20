@@ -19,12 +19,13 @@ from university_bot.utils import (
 )
 
 from .exceptions import CalendarError
-from .ui import CalendarMenuViewManager
+from .ui import CalendarManager
 
 if TYPE_CHECKING:
     from university_bot import Interaction
 
     from .service import CalendarService
+    from ..reminder import ReminderCog
 
 __all__ = ("CalendarHandler",)
 
@@ -50,6 +51,11 @@ class CalendarHandler(ConfigurationHandlerMixin):
     async def _apply_configuration_updates(self, content: str) -> None:
         await super()._apply_configuration_updates(content)
         await self.service.refresh_message(self)
+
+    @property
+    def _reminder_cog(self) -> ReminderCog | None:
+        """:class:`.ReminderCog`: The reminder cog if available; otherwise, ``None``."""
+        return self.service.bot.get_cog("ReminderCog")  # type: ignore
 
     async def send_message(self, interaction: Interaction, preview: bool) -> None:
         """|coro|
@@ -132,7 +138,7 @@ class CalendarHandler(ConfigurationHandlerMixin):
             channel_log,
         )
 
-        self.service.start_remove_deprecated_events_loop_if_not_running()
+        self.service.start_remove_deprecated_events_loop_if_not_running(self)
 
         try:
             await interaction.response.send_message(
@@ -161,7 +167,7 @@ class CalendarHandler(ConfigurationHandlerMixin):
             If sending the menu view fails.
         """
         try:
-            await CalendarMenuViewManager.create_and_send(self, interaction)
+            await CalendarManager.create_and_send(self, interaction, self._reminder_cog)
         except HTTPException as e:
             _logger.error("Failed to send menu view.", exc_info=True)
             raise CalendarError("Failed to send menu view.") from e

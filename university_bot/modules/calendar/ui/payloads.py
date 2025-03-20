@@ -16,7 +16,7 @@ if TYPE_CHECKING:
     from ..models import Event, RawEvent
 
 __all__ = (
-    "AddEventPayload",
+    "CreateEventPayload",
     "CopyEventPayload",
     "EditEventPayload",
     "EventInformationModalPayload",
@@ -25,22 +25,22 @@ __all__ = (
 
 
 @dataclass(slots=True, frozen=True)
-class AddEventPayload:
-    """A payload for adding a new event.
+class CreateEventPayload:
+    """A payload for creating a new event.
 
     Attributes
     ----------
-    raw_event: :class:`.RawEvent`
-        The raw event to add.
+    event: :class:`.RawEvent`
+        The raw event to create.
     locale: :class:`nextcord.Locale`
         The locale of the user.
-    config: :class:`.CalendarDataConfig`
+    data: :class:`.CalendarDataConfig`
         The calendar data configuration.
     """
 
-    raw_event: RawEvent
+    event: RawEvent
     locale: Locale
-    config: CalendarDataConfig
+    data: CalendarDataConfig
 
 
 @dataclass(slots=True, frozen=True)
@@ -51,18 +51,18 @@ class EditEventPayload:
     ----------
     event_id: :class:`str`
         The ID of the event to edit.
-    raw_event: :class:`.RawEvent`
+    event: :class:`.RawEvent`
         The raw event to edit.
     locale: :class:`nextcord.Locale`
         The locale of the user.
-    config: :class:`.CalendarDataConfig`
+    data: :class:`.CalendarDataConfig`
         The calendar data configuration.
     """
 
     event_id: str
-    raw_event: RawEvent
+    event: RawEvent
     locale: Locale
-    config: CalendarDataConfig
+    data: CalendarDataConfig
 
 
 @dataclass(slots=True, frozen=True)
@@ -71,16 +71,16 @@ class CopyEventPayload:
 
     Attributes
     ----------
-    raw_event: :class:`.RawEvent`
+    event: :class:`.RawEvent`
         The raw event to copy.
     locale: :class:`nextcord.Locale`
         The locale of the user.
-    config: :class:`.CalendarDataConfig`
+    data: :class:`.CalendarDataConfig`
         The calendar data configuration."""
 
-    raw_event: RawEvent
+    event: RawEvent
     locale: Locale
-    config: CalendarDataConfig
+    data: CalendarDataConfig
 
 
 @dataclass(slots=True, frozen=True)
@@ -97,7 +97,7 @@ class SummaryEventPayload:
         The total number of events.
     locale: :class:`nextcord.Locale`
         The locale of the user.
-    config: :class:`.CalendarDataConfig`
+    data: :class:`.CalendarDataConfig`
         The calendar data configuration.
     """
 
@@ -105,11 +105,11 @@ class SummaryEventPayload:
     index: int
     total: int
     locale: Locale
-    config: CalendarDataConfig
+    data: CalendarDataConfig
     raw_event: RawEvent = field(init=False)
 
     def __post_init__(self) -> None:
-        object.__setattr__(self, "raw_event", self.event.to_raw(self.config))
+        object.__setattr__(self, "raw_event", self.event.to_raw(self.data))
 
 
 @dataclass(slots=True, frozen=True)
@@ -118,16 +118,17 @@ class EventInformationModalPayload:
 
     Attributes
     ----------
-    raw_event: :class:`.RawEvent`
+    event: :class:`.RawEvent`
         The raw event to fill the modal with.
     locale: :class:`nextcord.Locale`
         The locale of the user.
-    config: :class:`.CalendarDataConfig`
+    data: :class:`.CalendarDataConfig`
         The calendar data configuration.
     refresh_method: Callable[[:class:`Interaction`], Awaitable[`None`]]
+        The method to refresh the view.
     """
 
-    raw_event: RawEvent
+    event: RawEvent
     locale: Locale
-    config: CalendarDataConfig
+    data: CalendarDataConfig
     refresh_method: Callable[[Interaction], Awaitable[None]]

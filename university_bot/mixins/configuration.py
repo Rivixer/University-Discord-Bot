@@ -152,6 +152,12 @@ class ConfigurationHandlerMixin(ABC):
     __service: ConfigurationServiceMixin[DataConfigBaseModel]
 
     def __init__(self, service: Any, logger: Logger) -> None:
+        if not isinstance(service, ConfigurationServiceMixin):
+            raise TypeError(
+                f"{service.__class__.__name__} must be an instance "
+                "of ConfigurationServiceMixin."
+            )
+
         self.__service = service
         self.__logger = logger
 

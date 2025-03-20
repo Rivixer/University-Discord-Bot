@@ -258,23 +258,9 @@
         },
         "calendar": {
             "embeds": {
-                "menu": {
-                    "title": "Menu kalendarza",
-                    "description": "Wybierz jedną z opcji, aby zarządzać kalendarzem.",
-                    "fields": {
-                        "add_event": {
-                            "name": "Utwórz",
-                            "value": "Utwórz nowe wydarzenie w kalendarzu."
-                        },
-                        "summary": {
-                            "name": "Podsumowanie",
-                            "value": "Wyświetl i zarządzaj wydarzeniami w kalendarzu."
-                        }
-                    }
-                },
                 "event": {
                     "titles": {
-                        "add": "Utwórz wydarzenie",
+                        "create": "Utwórz wydarzenie",
                         "edit": "Edytuj wydarzenie",
                         "copy": "Kopiuj wydarzenie",
                         "summary": "Podgląd wydarzenia"
@@ -299,6 +285,10 @@
                             "name": "Ukryte:",
                             "yes": "Tak",
                             "no": "Nie"
+                        },
+                        "reminders": {
+                            "name": "Przypomnienia:",
+                            "sent": "wysłane"
                         }
                     },
                     "other": {
@@ -307,23 +297,17 @@
                 }
             },
             "views": {
-                "menu": {
-                    "buttons": {
-                        "add_event": "Utwórz wydarzenie",
-                        "summary": "Podsumowanie"
-                    }
-                },
                 "event": {
                     "buttons": {
-                        "information": "Informacje",
-                        "reminder": "Przypomnienie",
+                        "properties": "Właściwości",
+                        "reminders": "Przypomnienia",
                         "show": "Pokaż",
                         "hide": "Ukryj",
                         "save": "Zapisz",
                         "cancel": "Anuluj"
                     },
                     "messages": {
-                        "add": {
+                        "create": {
                             "success": "Wydarzenie zostało dodane."
                         },
                         "edit": {
@@ -336,10 +320,10 @@
                 },
                 "summary": {
                     "buttons": {
+                        "create": "Utwórz",
                         "edit": "Edytuj",
                         "copy": "Kopiuj",
-                        "delete": "Usuń",
-                        "return": "Powrót"
+                        "delete": "Usuń"
                     },
                     "messages": {
                         "delete": {
@@ -350,7 +334,7 @@
             },
             "modals": {
                 "event_information": {
-                    "title": "Informacje o wydarzeniu",
+                    "title": "Właściwości wydarzenia",
                     "text_inputs": {
                         "description": {
                             "label": "Opis:",
@@ -369,6 +353,94 @@
                         "location": {
                             "label": "Lokalizacja:",
                             "placeholder": "Lokalizacja wydarzenia"
+                        }
+                    }
+                }
+            }
+        },
+        "reminder": {
+            "embeds": {
+                "no_reminders": {
+                    "title": "Brak przypomnień",
+                    "description": "Nie ma żadnych przypomnień do wyświetlenia."
+                },
+                "config": {
+                    "type": {
+                        "add": "dodaj",
+                        "edit": "edytuj",
+                        "copy": "kopiuj",
+                        "summary": "podsumowanie"
+                    },
+                    "configuration": "Konfiguracja",
+                    "datetime": "Data i godzina",
+                    "channel": "Kanał",
+                    "roles": "Role",
+                    "message": "Wiadomość"
+                }
+            },
+            "views": {
+                "no_reminders": {
+                    "buttons": {
+                        "add": "Dodaj",
+                        "return": "Powrót"
+                    }
+                },
+                "reminder": {
+                    "messages": {
+                        "add": {
+                            "success": "Przypomnienie zostało dodane. Pamiętaj o zapisaniu wydarzenia."
+                        },
+                        "edit": {
+                            "success": "Przypomnienie zostało zaktualizowane. Pamiętaj o zapisaniu wydarzenia."
+                        },
+                        "copy": {
+                            "success": "Przypomnienie zostało skopiowane. Pamiętaj o zapisaniu wydarzenia."
+                        }
+                    },
+                    "buttons": {
+                        "edit_properties": "Edytuj właściwości",
+                        "save": "Zapisz",
+                        "cancel": "Anuluj"
+                    }
+                },
+                "summary": {
+                    "buttons": {
+                        "add": "Dodaj",
+                        "edit": "Edytuj",
+                        "copy": "Kopiuj",
+                        "delete": "Usuń",
+                        "return_to_event": "Powrót do konfiguracji wydarzenia"
+                    },
+                    "messages": {
+                        "delete": {
+                            "success": "Przypomnienie zostało usunięte. Pamiętaj o zapisaniu wydarzenia."
+                        }
+                    }
+                },
+                "channel_select": {
+                    "placeholder": "Wybierz kanał..."
+                },
+                "role_select": {
+                    "placeholder": "Wybierz role...",
+                    "members": "Członków"
+                }
+            },
+            "modals": {
+                "reminder_information": {
+                    "title": "Właściwości przypomnienia",
+                    "text_inputs": {
+                        "description": {
+                            "label": "Opis:",
+                            "placeholder": "Opis przypomnienia"
+                        },
+                        "date": {
+                            "label": "Data:"
+                        },
+                        "time": {
+                            "label": "Godzina:"
+                        },
+                        "additional_info": {
+                            "label": "Dodatkowe informacje:"
                         }
                     }
                 }
@@ -535,7 +607,7 @@
                         },
                         "study_info": {
                             "label": "Informacje o studiach:",
-                            "placeholder": "wydział, kierunek, typ (lic/inż/mgr/jednolite), forma (stacjonarne/niestacjonarne), rocznik"
+                            "placeholder": "wydział, kierunek, stopień (lic/inż/mgr/jednolite), forma (stacjonarne/niestacjonarne), rocznik"
                         },
                         "reason": {
                             "label": "Powód:",

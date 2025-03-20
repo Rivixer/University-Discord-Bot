@@ -37,6 +37,10 @@ data_filepath = "data/calendar.json"  # Path to the calendar data file, must be 
 enabled = true            # Enable presence module.
 data_filepath = "data/presence.json"  # Path to the presence data file (must be a JSON file).
 
+[reminder]
+enabled = true           # Enable reminder module.
+data_filepath = "data/reminder.json" # Path to the reminder data file (must be a JSON file).
+
 [role_assignment]
 enabled = true            # Enable role assignment module.
 data_filepath = "data/role_assignment.json"  # Path to the role assignment data file (must be a JSON file).

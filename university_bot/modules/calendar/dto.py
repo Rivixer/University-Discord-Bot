@@ -5,20 +5,44 @@ from __future__ import annotations
 
 import datetime
 import uuid
+from typing import TYPE_CHECKING
 
 from sqlalchemy import Boolean, Date, String, Time
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .config import EventFieldLimits
 
-__all__ = ("EventDTO",)
+if TYPE_CHECKING:
+    from ..reminder.dto import ReminderDTO
 
-Base = declarative_base()
+__all__ = ("EventDTO", "CalendarBase")
+
+CalendarBase = declarative_base()
 
 
-class EventDTO(Base):  # pylint: disable=too-few-public-methods
-    """Represents an event stored in the SQL database."""
+class EventDTO(CalendarBase):  # pylint: disable=too-few-public-methods
+    """Represents an event stored in the SQL database.
+
+    Attributes
+    ----------
+    id: :class:`str`
+        The unique identifier of the event.
+    description: :class:`str`
+        The description of the event.
+    date: :class:`datetime.date`
+        The date of the event.
+    time: :class:`datetime.time`
+        The time of the event.
+    prefix: :class:`str`
+        The prefix of the event.
+    location: :class:`str`
+        The location of the event.
+    is_hidden: :class:`bool`
+        Whether the event is hidden.
+    reminders: list[:class:`ReminderDTO`]
+        The reminders associated with the event.
+    """
 
     __tablename__ = "events"
 
@@ -51,6 +75,12 @@ class EventDTO(Base):  # pylint: disable=too-few-public-methods
         Boolean,
         default=False,
         nullable=False,
+    )
+
+    reminders: Mapped[list[ReminderDTO]] = relationship(
+        "ReminderDTO",
+        back_populates="event",
+        cascade="all, delete-orphan",
     )
 
     def __repr__(self) -> str:

@@ -16,7 +16,7 @@ from ..config import EventFieldLimits
 if TYPE_CHECKING:
     from university_bot import Interaction
 
-    from .managers import CalendarMenuViewManager
+    from .manager import CalendarManager
     from .payloads import EventInformationModalPayload
     from ..models import RawEvent
 
@@ -66,13 +66,13 @@ class EventInformationModal(LocalizedMixin, Modal):
     It is used to edit the description, date, time, prefix, and location of an event.
     """
 
-    _manager: CalendarMenuViewManager
+    _manager: CalendarManager
     _payload: EventInformationModalPayload
     _text_inputs: _EventInformationModalTextInputs[View]
 
     def __init__(
         self,
-        manager: CalendarMenuViewManager,
+        manager: CalendarManager,
         payload: EventInformationModalPayload,
     ) -> None:
         loc_group = _loc.get_group("event_information")
@@ -83,8 +83,8 @@ class EventInformationModal(LocalizedMixin, Modal):
         self._payload = payload
 
         inputs_loc = self.get_loc_group("text_inputs")
-        raw_event = payload.raw_event
-        config = payload.config
+        raw_event = payload.event
+        config = payload.data
 
         description = TextInput[View](
             label=inputs_loc.get("description.label", "Description:"),
@@ -138,5 +138,5 @@ class EventInformationModal(LocalizedMixin, Modal):
 
     @override
     async def callback(self, interaction: Interaction) -> None:
-        self._text_inputs.update_values(self._payload.raw_event)
+        self._text_inputs.update_values(self._payload.event)
         await self._payload.refresh_method(interaction)

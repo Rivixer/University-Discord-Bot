@@ -1,9 +1,9 @@
 # SPDX-License-Identifier: MIT
 """
-university_bot.modules.calendar.ui
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+university_bot.modules.reminder.ui
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-A module providing the user interface components for the calendar.
+A module providing the user interface components for the reminder.
 """
 
 from .embeds import *

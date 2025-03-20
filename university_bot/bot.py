@@ -310,7 +310,7 @@ class UniversityBot(Bot):
         ) as e:
             self._logger.error(
                 "Cog '%s' couldn't be loaded! %s",
-                cog_cls.__cog_name__,
+                cog_cls,
                 format_exception_chain(e, sep="\n"),
                 exc_info=True,
             )

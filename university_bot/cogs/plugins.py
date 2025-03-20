@@ -204,7 +204,7 @@ class PluginsCog(commands.Cog):
         if plugin.is_enabled:
             raise ValueError(f"Plugin '{name}' is already enabled")
 
-        if not await self._bot.load_cog(plugin.extension_name):
+        if not await self._bot.load_extension(plugin.extension_name):
             raise PluginOperationError(f"Plugin '{name}' couldn't be enabled")
 
         plugin.enable()
@@ -249,7 +249,7 @@ class PluginsCog(commands.Cog):
         if plugin.is_disabled:
             raise ValueError(f"Plugin '{name}' is already disabled")
 
-        if not self._bot.unload_cog(plugin.extension_name):
+        if not self._bot.unload_extension(plugin.extension_name):
             raise PluginOperationError(f"Plugin '{name}' couldn't be disabled")
 
         plugin.disable()
@@ -285,7 +285,11 @@ class PluginsCog(commands.Cog):
 
         plugin = self._find_plugin(name)
 
-        method = self._bot.reload_cog if plugin.is_enabled else self._bot.load_cog
+        method = (
+            self._bot.reload_extension
+            if plugin.is_enabled
+            else self._bot.load_extension
+        )
         if not method(plugin.extension_name):
             raise PluginOperationError(f"Plugin '{name}' couldn't be reloaded")
 
@@ -315,7 +319,7 @@ class PluginsCog(commands.Cog):
                 continue
 
             if plugin.is_enabled:
-                if not await self._bot.load_cog(plugin.extension_name):
+                if not await self._bot.load_extension(plugin.extension_name):
                     Console.error(f"Plugin {plugin.name} couldn't be loaded.")
                     plugin.status = PluginStatus.INVALID
 

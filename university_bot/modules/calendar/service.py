@@ -19,7 +19,6 @@ from typing import TYPE_CHECKING, NoReturn, override
 from nextcord import Embed
 from nextcord.ui import View
 from nextcord.utils import MISSING
-from sqlalchemy import delete, select
 from sqlalchemy.exc import SQLAlchemyError
 
 from university_bot import MessageData, ResourceFetchFailed, get_logger
@@ -31,10 +30,11 @@ from university_bot.mixins.configuration import (
 from university_bot.mixins.static_message import StaticMessageMixin
 
 from .config import CalendarDataConfig
-from .dto import Base, EventDTO
+from .dto import CalendarBase
 from .enums import EventVisibility
 from .handler import CalendarHandler
 from .models import Event, RawEvent
+from .repository import CalendarRepository
 from .ui.embeds import CalendarEmbed
 from .utils import group_events_by_date, sorted_events
 
@@ -62,11 +62,14 @@ class CalendarService(
         The calendar configuration.
     data: :class:`.CalendarDataConfig`
         The calendar data configuration.
+    repository: :class:`.CalendarRepository`
+        The calendar repository.
     """
 
     bot: UniversityBot
     config: CalendarConfig
     data: CalendarDataConfig
+    repository: CalendarRepository
     _loop_running: bool = False
 
     def __init__(self, bot: UniversityBot, config: CalendarConfig) -> None:
@@ -83,8 +86,14 @@ class CalendarService(
             _logger.error("Data file is invalid.")
             raise InvalidConfigurationError("Data file is invalid.") from e
 
+        self.repository = CalendarRepository(bot.database.async_session_factory)
+
         ConfigurationServiceMixin.__init__(  # type: ignore
-            self, bot, self.data, self.config.data_filepath, _logger
+            self,
+            bot,
+            self.data,
+            self.config.data_filepath,
+            _logger,
         )
 
         StaticMessageMixin.__init__(  # type: ignore
@@ -116,19 +125,25 @@ class CalendarService(
                 "Remove deprecated events loop will not be started."
             )
         else:
-            self.start_remove_deprecated_events_loop_if_not_running()
+            self.start_remove_deprecated_events_loop_if_not_running(handler)
 
-    def start_remove_deprecated_events_loop_if_not_running(self) -> None:
-        """Starts the remove deprecated events loop if it is not already running."""
+    def start_remove_deprecated_events_loop_if_not_running(
+        self, handler: CalendarHandler
+    ) -> None:
+        """Starts the remove deprecated events loop if it is not already running.
+
+        Parameters
+        ----------
+        handler: :class:`.CalendarHandler`
+            The calendar handler.
+        """
         if not self._loop_running:
             _logger.debug("Starting remove deprecated events loop.")
-            self.bot.loop.create_task(self.remove_deprecated_events_loop())
+            self.bot.loop.create_task(self._remove_deprecated_events_loop(handler))
 
-    async def remove_deprecated_events_loop(self) -> NoReturn:
-        """|coro|
-
-        A loop to remove deprecated events from the calendar at midnight.
-        """
+    async def _remove_deprecated_events_loop(
+        self, handler: CalendarHandler
+    ) -> NoReturn:
         try:
             self._loop_running = True
             while True:
@@ -138,7 +153,8 @@ class CalendarService(
                 )
                 sleep_duration = (next_midnight - now).total_seconds()
                 await asyncio.sleep(sleep_duration)
-                await self.remove_deprecated_events()
+                if await self.remove_deprecated_events():
+                    await self.refresh_message(handler)
         finally:
             self._loop_running = False
 
@@ -158,27 +174,18 @@ class CalendarService(
         """
 
         today = datetime.date.today()
+        deprecated_event_dtos = await self.repository.remove_deprecated_events(today)
+        deprecated_events = [Event.from_dto(e) for e in deprecated_event_dtos]
 
-        async with self.bot.database.async_session_factory() as session:
-            stmt = select(EventDTO).where(EventDTO.date < today)
-            result = await session.execute(stmt)
-            deprecated_events = result.scalars().all()
-
-            if deprecated_events:
-                delete_stmt = delete(EventDTO).where(EventDTO.date < today)
-                await session.execute(delete_stmt)
-                await session.commit()
-
-        deprecated_events = [Event.from_dto(e) for e in deprecated_events]
-        for e in deprecated_events:
-            datetime_str = self.data.format_input_date(e.date)
-            if e.time:
-                datetime_str += " " + self.data.format_input_time(e.time)
+        for event in deprecated_events:
+            datetime_str = self.data.format_input_date(event.date)
+            if event.time:
+                datetime_str += " " + self.data.format_input_time(event.time)
 
             _logger.debug(
                 "Removed deprecated event: %s, %s",
                 datetime_str,
-                e.description,
+                event.description,
             )
 
         return deprecated_events
@@ -207,7 +214,7 @@ class CalendarService(
         """
         try:
             async with self.bot.database.engine.begin() as conn:
-                await create_tables_if_not_exist(conn, _logger, Base)
+                await create_tables_if_not_exist(conn, _logger, CalendarBase)
         except SQLAlchemyError as e:
             _logger.error("Failed to initialize the database.", exc_info=True)
             raise RuntimeError("Failed to initialize the database.") from e
@@ -223,10 +230,7 @@ class CalendarService(
             The event to add.
         """
         event_dto = event.to_dto()
-        async with self.bot.database.async_session_factory() as session:
-            async with session.begin():
-                session.add(event_dto)
-
+        await self.repository.add_event(event_dto)
         self._update_last_modified()
         _logger.debug("Added event to database: %s", event)
 
@@ -240,14 +244,10 @@ class CalendarService(
         event: :class:`.Event`
             The event to delete.
         """
-        async with self.bot.database.async_session_factory() as session:
-            async with session.begin():
-                event_dto = await session.get(EventDTO, event.id)
-                if event_dto is None:
-                    _logger.warning("Event with id %s not found in database.", event.id)
-                    return
-                await session.delete(event_dto)
-
+        success = await self.repository.delete_event(event.id)
+        if not success:
+            _logger.warning("Event with id %s not found in database.", event.id)
+            return
         self._update_last_modified()
         _logger.debug("Deleted event from database: %s", event)
 
@@ -265,20 +265,30 @@ class CalendarService(
             The raw event object containing the new values.
         """
         event = raw_event.to_event(event_id)
-        async with self.bot.database.async_session_factory() as session:
-            async with session.begin():
-                orig_event = await session.get(EventDTO, event_id)
-                if not orig_event:
-                    _logger.warning(
-                        "Update failed: Event with ID %s not found.", event_id
-                    )
-                    return
-
-                for key in orig_event.__table__.columns.keys():
-                    setattr(orig_event, key, getattr(event, key))
-
+        success = await self.repository.update_event(event_id, event)
+        if not success:
+            _logger.warning("Update failed: Event with ID %s not found.", event_id)
+            return
         self._update_last_modified()
         _logger.debug("Updated event ID %s with new values.", event_id)
+
+    async def get_event_by_id(self, event_id: str) -> Event | None:
+        """|coro|
+
+        Retrieves an event from the calendar database by its ID.
+
+        Parameters
+        ----------
+        event_id: :class:`str`
+            The unique identifier of the event.
+
+        Returns
+        -------
+        Optional[:class:`.Event`]
+            The event with the given ID, or `None` if not found.
+        """
+        dto = await self.repository.get_event_by_id(event_id)
+        return Event.from_dto(dto) if dto else None
 
     async def get_events(
         self, visibility: EventVisibility = EventVisibility.ALL
@@ -299,19 +309,8 @@ class CalendarService(
         Sequence[:class:`Event`]
             The list of events matching the visibility filter.
         """
-        async with self.bot.database.async_session_factory() as session:
-            stmt = select(EventDTO)
-
-            if visibility is EventVisibility.VISIBLE:
-                stmt = stmt.where(EventDTO.is_hidden.is_(False))
-            elif visibility is EventVisibility.HIDDEN:
-                stmt = stmt.where(EventDTO.is_hidden.is_(True))
-
-            result = await session.execute(stmt)
-
-        events = result.scalars().all()
-        events = [Event.from_dto(e) for e in events]
-        return events
+        dtos = await self.repository.get_events(visibility)
+        return [Event.from_dto(dto) for dto in dtos]
 
     async def get_sorted_events(
         self, visibility: EventVisibility = EventVisibility.ALL
@@ -358,13 +357,12 @@ class CalendarService(
         :class:`.MessageData`
             The message data for the calendar.
         """
-        events = await self.get_events(EventVisibility.VISIBLE)
+        events = await self.get_sorted_events(EventVisibility.VISIBLE)
         grouped_events = group_events_by_date(events)
-        sorted_grouped_events = dict(sorted(grouped_events.items()))
 
         return MessageData(
             content=self.data.content or (MISSING if missing else None),
-            embed=CalendarEmbed.create(self.data, sorted_grouped_events),
+            embed=CalendarEmbed.create(self.data, grouped_events),
             view=None,
         )
 

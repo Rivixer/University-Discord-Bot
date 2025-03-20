@@ -14,22 +14,22 @@ from university_bot.mixins import LocalizedMixin
 from university_bot.utils import format_embed_values
 
 if TYPE_CHECKING:
-
     from nextcord import Locale
 
     from .payloads import (
-        AddEventPayload,
         CopyEventPayload,
+        CreateEventPayload,
         EditEventPayload,
         SummaryEventPayload,
     )
     from ..config import CalendarDataConfig
     from ..models import Event, RawEvent
+    from ...reminder.models import RawReminder
 
 __all__ = (
     "CalendarEmbed",
-    "CalendarMenuEmbed",
-    "AddEventEmbed",
+    "NoEventsEmbed",
+    "CreateEventEmbed",
     "EditEventEmbed",
     "CopyEventEmbed",
     "SummaryEventEmbed",
@@ -94,46 +94,37 @@ class CalendarEmbed(Embed):
         return self
 
 
-class CalendarMenuEmbed(LocalizedMixin, Embed):
-    """An embed representing the calendar menu.
+class NoEventsEmbed(LocalizedMixin, Embed):
+    """An embed to display when there are no events to show."""
 
-    This embed is used to display the calendar menu with the available options.
-    """
+    def __init__(self, locale: Locale, data: CalendarDataConfig) -> None:
+        LocalizedMixin.__init__(self, locale, _loc.get_group("no_events"))
 
-    def __init__(self, locale: Locale, config: CalendarDataConfig) -> None:
-        LocalizedMixin.__init__(self, locale, _loc.get_group("menu"))
-
-        title = self.get_loc("title", "Calendar Menu")
-        description = self.get_loc("description", "Select an option below.")
+        title = self.get_loc("title", "No events")
+        description = self.get_loc("description", "There are no events to display.")
 
         Embed.__init__(
             self,
             title=title,
             description=description,
-            color=Color.orange(),
+            color=Color.red(),
         )
 
-        self.add_field(
-            name=self.get_loc("fields.add_event.name", "Add Event"),
-            value=self.get_loc("fields.add_event.value", "Add a new event."),
-            inline=False,
-        ).add_field(
-            name=self.get_loc("fields.summary.name", "Summary"),
-            value=self.get_loc("fields.summary.value", "View the events summary."),
-            inline=False,
-        )
-
-        self.set_thumbnail(url=config.embed.thumbnail.url)
+        self.set_thumbnail(url=data.embed.thumbnail.url)
 
 
 class _BaseEventEmbed(LocalizedMixin, Embed):
 
     _event: RawEvent
+    _reminders: list[RawReminder]
+    _locale: Locale
 
     def __init__(self, locale: Locale, raw_event: RawEvent) -> None:
         LocalizedMixin.__init__(self, locale, _loc.get_group("event"))
         Embed.__init__(self)
         self._event = raw_event
+        self._reminders = raw_event.reminders
+        self._locale = locale
 
     def _build(self, color: Color, *, edit_view: bool) -> None:
         self._set_color(color)
@@ -167,6 +158,17 @@ class _BaseEventEmbed(LocalizedMixin, Embed):
         value = self._event.date
         if edit_view and value and not self._event.is_date_valid():
             value = f"**(!)** {value}"
+
+        if (
+            not self._event.is_all_day
+            and self._event.is_date_valid()
+            and self._event.is_time_valid()
+            and self._event.parsed_datetime
+        ):
+            value = f"{value} (<t:{int(self._event.parsed_datetime.timestamp())}:R>)"
+        elif weekday := self._event.get_weekday(self._locale):
+            value = f"{value} ({weekday})"
+
         self.add_field(name=name, value=value or "-", inline=False)
 
         # Time
@@ -194,35 +196,49 @@ class _BaseEventEmbed(LocalizedMixin, Embed):
             value = fields_loc.get("is_hidden.no", "No")
         self.add_field(name=name, value=value, inline=False)
 
+        # Reminders
+        if self._reminders:
+            name = fields_loc.get("reminders.name", "Reminders:")
+            values: list[str] = []
+            for reminder in self._reminders:
+                text = f"{reminder.date} {reminder.time}"
+                if reminder.is_valid() and reminder.parsed_datetime:
+                    text += f" (<t:{int(reminder.parsed_datetime.timestamp())}:R>)"
+                if reminder.sent:
+                    text += f" [{fields_loc.get('reminders.sent', 'sent')}]"
+                values.append(text)
+            value = "\n".join(values)
+            self.add_field(name=name, value=value, inline=False)
 
-class AddEventEmbed(_BaseEventEmbed):
-    """An embed for adding a new event."""
 
-    def __init__(self, payload: AddEventPayload) -> None:
-        super().__init__(payload.locale, payload.raw_event)
-        self.title = self.get_loc("titles.add", "Add event")
-        self._build(Color.magenta(), edit_view=True)
-        self.set_thumbnail(url=payload.config.embed.thumbnail.url)
+class CreateEventEmbed(_BaseEventEmbed):
+    """An embed for creating a new event."""
+
+    def __init__(self, payload: CreateEventPayload) -> None:
+        super().__init__(payload.locale, payload.event)
+        self.title = self.get_loc("titles.create", "Create event")
+        self._build(Color.green(), edit_view=True)
+        self.set_thumbnail(url=payload.data.embed.thumbnail.url)
 
 
 class EditEventEmbed(_BaseEventEmbed):
     """An embed for editing an event."""
 
     def __init__(self, payload: EditEventPayload) -> None:
-        super().__init__(payload.locale, payload.raw_event)
+        super().__init__(payload.locale, payload.event)
         self.title = self.get_loc("titles.edit", "Edit event")
         self._build(Color.blurple(), edit_view=True)
-        self.set_thumbnail(url=payload.config.embed.thumbnail.url)
+        self.set_thumbnail(url=payload.data.embed.thumbnail.url)
 
 
 class CopyEventEmbed(_BaseEventEmbed):
     """An embed for copying an event."""
 
     def __init__(self, payload: CopyEventPayload) -> None:
-        super().__init__(payload.locale, payload.raw_event)
+        super().__init__(payload.locale, payload.event)
         self.title = self.get_loc("titles.copy", "Copy event")
-        self._build(Color.green(), edit_view=True)
-        self.set_thumbnail(url=payload.config.embed.thumbnail.url)
+        self._build(Color.magenta(), edit_view=True)
+        self.set_thumbnail(url=payload.data.embed.thumbnail.url)
 
 
 class SummaryEventEmbed(_BaseEventEmbed):
@@ -236,4 +252,4 @@ class SummaryEventEmbed(_BaseEventEmbed):
         self.title = title
 
         self._build(Color.orange(), edit_view=False)
-        self.set_thumbnail(url=payload.config.embed.thumbnail.url)
+        self.set_thumbnail(url=payload.data.embed.thumbnail.url)

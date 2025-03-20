@@ -6,6 +6,7 @@ university_bot.utils
 This module provides utility functions and classes for the bot.
 """
 
+from .cogs import *
 from .embeds import *
 from .exceptions import *
 from .fetches import *
