@@ -236,11 +236,8 @@ class ReminderService(ConfigurationServiceMixin[ReminderDataConfig]):
         dict[:class:`str`, :class:`str`]
             The formatting dictionary.
         """
-        dt = (
-            reminder.datetime
-            if isinstance(reminder, Reminder)
-            else reminder.parsed_datetime
-        )
+        dt = event.datetime if isinstance(event, Event) else event.parsed_datetime
+
         if dt and event.is_all_day:
             dt_repr = self.data.format_repr_date(dt)
         elif dt:
