@@ -48,6 +48,8 @@ NOTES
 
 from __future__ import annotations
 
+import importlib
+import inspect
 import json
 from dataclasses import dataclass, field
 from enum import Enum, auto
@@ -67,6 +69,7 @@ from university_bot.errors import (
     PluginOperationError,
 )
 from university_bot.utils2 import InteractionUtils
+from university_bot.utils.cogs import ENTRY_COG_ATTR
 
 if TYPE_CHECKING:
     from university_bot import UniversityBot
@@ -319,8 +322,24 @@ class PluginsCog(commands.Cog):
                 continue
 
             if plugin.is_enabled:
-                if not await self._bot.load_extension(plugin.extension_name):
-                    Console.error(f"Plugin {plugin.name} couldn't be loaded.")
+
+                cog_import_path = f"{self._DIR}.{plugin.name}.{plugin.name}"
+                from nextcord.ext.commands import Cog
+
+                module = importlib.import_module(cog_import_path)
+                cog_classes = [
+                    cls
+                    for cls in vars(module).values()
+                    if inspect.isclass(cls) and issubclass(cls, Cog) and cls is not Cog
+                ]
+
+                cog_class = (
+                    [cls for cls in cog_classes if getattr(cls, ENTRY_COG_ATTR, False)]
+                    or cog_classes
+                    or [None]
+                )[0]
+                if not await self._bot.load_cog(cog_class):
+                    _logger.exception(f"Plugin {plugin.name} couldn't be loaded.")
                     plugin.status = PluginStatus.INVALID
 
         self._list = plugins
