@@ -1,0 +1,23 @@
+# VSCode
+**/.vscode/
+
+# Git / GitHub
+**/.gitignore
+
+# Virtual environments
+**/.venv/
+
+# Old version of the bot
+v0.10/
+
+# Development requirements
+**/requirements-dev.txt
+
+# Python cache files
+**/__pycache__/
+
+# Python eggs
+**/*.egg-info
+
+# IDE specific files
+**/pyrightconfig.json

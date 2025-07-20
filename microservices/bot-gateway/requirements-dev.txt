@@ -1,0 +1,10 @@
+python-dotenv
+nextcord
+SQLAlchemy
+asyncpg
+redis
+types-redis
+alembic
+pydantic-settings
+httpx[http2]
+fastapi

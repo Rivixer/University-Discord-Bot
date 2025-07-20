@@ -1,0 +1,7 @@
+aiohttp
+redis
+fastapi
+uvicorn[standard]
+sqlalchemy
+asyncpg
+pydantic-settings

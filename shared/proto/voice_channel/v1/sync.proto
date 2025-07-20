@@ -1,0 +1,46 @@
+syntax = "proto3";
+
+package voice_channel.v1;
+
+message GuildCategory {
+  int64 guild_id    = 1;
+  int64 category_id = 2;
+}
+
+message BatchGetVoiceChannelStatesRequest {
+  repeated GuildCategory guilds = 1;
+}
+
+message BatchGetVoiceChannelStatesResponse {
+  repeated GuildVoiceChannelStates states = 1;
+}
+
+message GuildVoiceChannelStates {
+  int64 guild_id = 1;
+  repeated VoiceChannelState channel_states = 2;
+}
+
+service VoiceChannelStateService {
+  rpc BatchGetVoiceChannelStates(BatchGetVoiceChannelStatesRequest)
+    returns (BatchGetVoiceChannelStatesResponse);
+}
+
+message VoiceChannelState {
+  int64 channel_id = 1;
+  int32 active_users = 2;
+}
+
+message GetVoiceChannelThrottleStatusRequest {
+  int64 guild_id   = 1;
+  int64 channel_id = 2;
+}
+
+message VoiceChannelThrottleStatusResponse {
+  int32 remaining_changes = 1;
+  int64 next_available = 2;
+}
+
+service VoiceChannelThrottleService {
+  rpc GetVoiceChannelThrottleStatus(GetVoiceChannelThrottleStatusRequest)
+    returns (VoiceChannelThrottleStatusResponse);
+}

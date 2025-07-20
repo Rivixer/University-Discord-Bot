@@ -1,0 +1,55 @@
+syntax = "proto3";
+
+package voice_channel.v1;
+
+message VoiceChannelUserJoinedEvent {
+  int64 guild_id = 1;
+  int64 user_id = 2;
+  int64 channel_id = 3;
+  optional int64 category_id = 4;
+}
+
+message VoiceChannelUserLeftEvent {
+  int64 guild_id = 1;
+  int64 user_id = 2;
+  int64 channel_id = 3;
+  optional int64 category_id = 4;
+}
+
+message VoiceChannelCreatedEvent {
+  int64 guild_id = 1;
+  int64 channel_id = 2;
+  optional int64 category_id = 3;
+}
+
+message VoiceChannelDeletedEvent {
+  int64 guild_id = 1;
+  int64 channel_id = 2;
+  optional int64 category_id = 3;
+}
+
+message BotVoiceChannelNameChangedEvent {
+  int64 guild_id      = 1;
+  int64 channel_id    = 2;
+  string new_name     = 3;
+  int64 triggered_by  = 4;
+}
+
+message BotVoiceChannelNameChangeRejectedEvent {
+  int64 guild_id       = 1;
+  int64 channel_id     = 2;
+  int64 triggered_by   = 3;
+  int64 next_available = 4;
+}
+
+message BotVoiceChannelLimitChangedEvent {
+  int64 guild_id      = 1;
+  int64 channel_id    = 2;
+  int32 new_limit     = 3;
+  int64 triggered_by  = 4;
+}
+
+message VoiceChannelThrottleAvailableEvent {
+  int64 guild_id    = 1;
+  int64 channel_id  = 2;
+}

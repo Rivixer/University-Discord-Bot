@@ -1,0 +1,59 @@
+services:
+  redis:
+    image: redis:8.0.2
+    container_name: redis
+    ports:
+      - "6379:6379"
+
+  postgres:
+    image: postgres:17
+    container_name: postgres
+    environment:
+      POSTGRES_USER: bot
+      POSTGRES_PASSWORD: secret
+      POSTGRES_DB: bot
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  bot-gateway:
+    build:
+      context: .
+      dockerfile: microservices/bot-gateway/Dockerfile
+    container_name: gateway
+    depends_on: 
+      - redis
+      - postgres
+    environment:
+      ENVIRONMENT: ${ENVIRONMENT}
+      TEST_GUILD_ID: ${TEST_GUILD_ID}
+      DISCORD_BOT_TOKEN: ${DISCORD_BOT_TOKEN}
+      DATABASE_URL: postgresql+asyncpg://bot:secret@postgres/bot
+      REDIS_URL: redis://redis:6379
+      REDIS_GUILD_BASE: guild
+      REDIS_VOICE_CHANNEL_BASE: voice-channel
+      VOICE_SERVICE_URL: http://voice-channel-service:8000
+      
+
+  voice-channel-service:
+    build:
+      context: .
+      dockerfile: microservices/voice-channel-service/Dockerfile
+    container_name: vc_service
+    depends_on:
+      - redis
+      - postgres
+      - bot-gateway
+    environment:
+      DATABASE_URL: postgresql+asyncpg://bot:secret@postgres/bot
+      ALEMBIC_DATABASE_URL: postgresql://bot:secret@postgres/bot
+      REDIS_URL: redis://redis:6379/0
+      REDIS_GUILD_BASE: guild
+      REDIS_CHANNEL_BASE: voice-channel
+      UVICORN_HOST: 0.0.0.0
+      UVICORN_PORT: 8080
+      UVICORN_RELOAD: "false"
+
+volumes:
+  pgdata:

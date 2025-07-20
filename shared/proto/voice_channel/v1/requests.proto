@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+package voice_channel.v1;
+
+message CreateVoiceChannelRequest{
+  int64 guild_id = 1;
+  optional int64 category_id = 2;
+  string name = 3;
+}
+
+message DeleteVoiceChannelRequest{
+  int64 channel_id = 1;
+}
+
+message UpdateVoiceChannelRequest {
+  int64 channel_id = 1;
+  map<string, string> options = 2;
+}
+
+message ChangeVoiceChannelNameRequest {
+  int64 guild_id    = 1;
+  int64 channel_id  = 2;
+  string new_name   = 3;
+  int64 user_id     = 4;
+}
+
+message ChangeVoiceChannelLimitRequest {
+  int64 guild_id    = 1;
+  int64 channel_id  = 2;
+  int32 new_limit   = 3;
+  int64 user_id     = 4;
+}

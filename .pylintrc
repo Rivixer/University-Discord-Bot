@@ -1,5 +1,0 @@
-[MASTER]
-ignore=migrations
-
-[BASIC]
-good-names=i, j, k, e, f, v

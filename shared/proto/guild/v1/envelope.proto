@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package guild.v1;
+
+import "guild/v1/events.proto";
+
+message GuildEventEnvelope {
+  oneof payload {
+    GuildJoinedEvent joined_event = 1;
+    GuildLeftEvent left_event = 2;
+  }
+}

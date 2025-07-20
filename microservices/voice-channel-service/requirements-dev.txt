@@ -1,0 +1,10 @@
+aiohttp
+redis
+types-redis
+fastapi
+uvicorn[standard]
+sqlalchemy
+asyncpg
+pydantic-settings
+alembic
+psycopg2-binary

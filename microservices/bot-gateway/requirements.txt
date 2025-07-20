@@ -1,0 +1,7 @@
+nextcord
+SQLAlchemy
+asyncpg
+redis
+httpx[http2]
+fastapi
+pydantic-settings

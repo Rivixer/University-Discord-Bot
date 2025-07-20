@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package guild.v1;
+
+message GetGuildIdsRequest {}
+
+message GetGuildIdsResponse {
+  repeated int64 guild_ids = 1;
+}
+
+service GuildService {
+  rpc GetGuildIds(GetGuildIdsRequest)
+    returns (GetGuildIdsResponse);
+}

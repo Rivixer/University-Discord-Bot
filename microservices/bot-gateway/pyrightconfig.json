@@ -1,0 +1,14 @@
+{
+    "executionEnvironments": [
+        {
+            "root": ".",
+            "venvPath": ".",
+            "venv": ".venv",
+            "extraPaths": [
+                "../../shared/python",
+            ]
+        }
+    ],
+    "typeCheckingMode": "strict",
+    "reportMissingTypeStubs": false
+}

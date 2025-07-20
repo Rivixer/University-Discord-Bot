@@ -1,0 +1,14 @@
+{
+    "executionEnvironments": [
+        {
+            "root": ".",
+            "venvPath": ".",
+            "venv": ".venv",
+        }
+    ],
+    "typeCheckingMode": "strict",
+    "reportMissingTypeStubs": true,
+    "exclude": [
+        "shared/gen",
+    ]
+}

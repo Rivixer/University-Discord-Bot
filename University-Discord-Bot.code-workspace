@@ -1,0 +1,29 @@
+{
+	"folders": [
+		{
+			"path": "./"
+		},
+		{
+			"path": "shared/proto",
+			"name": "Shared - Proto",
+		},
+		{
+			"path": "shared/python",
+			"name": "Shared - Python",
+		},
+		{
+			"path": "microservices/bot-gateway",
+			"name": "Bot Gateway",
+		},
+		{
+			"path": "microservices/voice-channel-service",
+			"name": "Voice Channel Service",
+		}
+	],
+	"settings": {
+		"python.envFile": "${workspaceFolder}/.env",
+		"files.exclude": {
+			"microservices/": true,
+		},
+	},
+}

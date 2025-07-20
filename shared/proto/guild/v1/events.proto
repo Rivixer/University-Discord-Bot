@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package guild.v1;
+
+message GuildJoinedEvent {
+  int64 guild_id = 1;
+}
+
+message GuildLeftEvent {
+  int64 guild_id = 1;
+}
