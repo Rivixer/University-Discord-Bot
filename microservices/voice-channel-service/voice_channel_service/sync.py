@@ -217,6 +217,11 @@ class GuildSyncService:
                     ServiceConfig.guild_id.not_in(response.guild_ids)
                 )
             )
+            await session.execute(
+                delete(ChannelState).where(
+                    ChannelState.guild_id.not_in(response.guild_ids)
+                )
+            )
             await session.commit()
 
 
