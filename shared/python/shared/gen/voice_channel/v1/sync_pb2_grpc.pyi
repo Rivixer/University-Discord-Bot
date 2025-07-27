@@ -39,26 +39,3 @@ class VoiceChannelStateServiceServicer(metaclass=abc.ABCMeta):
     ) -> typing.Union[sync_pb2.BatchGetVoiceChannelStatesResponse, collections.abc.Awaitable[sync_pb2.BatchGetVoiceChannelStatesResponse]]: ...
 
 def add_VoiceChannelStateServiceServicer_to_server(servicer: VoiceChannelStateServiceServicer, server: typing.Union[grpc.Server, grpc.aio.Server]) -> None: ...
-
-class VoiceChannelThrottleServiceStub:
-    def __init__(self, channel: typing.Union[grpc.Channel, grpc.aio.Channel]) -> None: ...
-    GetVoiceChannelThrottleStatus: grpc.UnaryUnaryMultiCallable[
-        sync_pb2.GetVoiceChannelThrottleStatusRequest,
-        sync_pb2.VoiceChannelThrottleStatusResponse,
-    ]
-
-class VoiceChannelThrottleServiceAsyncStub:
-    GetVoiceChannelThrottleStatus: grpc.aio.UnaryUnaryMultiCallable[
-        sync_pb2.GetVoiceChannelThrottleStatusRequest,
-        sync_pb2.VoiceChannelThrottleStatusResponse,
-    ]
-
-class VoiceChannelThrottleServiceServicer(metaclass=abc.ABCMeta):
-    @abc.abstractmethod
-    def GetVoiceChannelThrottleStatus(
-        self,
-        request: sync_pb2.GetVoiceChannelThrottleStatusRequest,
-        context: _ServicerContext,
-    ) -> typing.Union[sync_pb2.VoiceChannelThrottleStatusResponse, collections.abc.Awaitable[sync_pb2.VoiceChannelThrottleStatusResponse]]: ...
-
-def add_VoiceChannelThrottleServiceServicer_to_server(servicer: VoiceChannelThrottleServiceServicer, server: typing.Union[grpc.Server, grpc.aio.Server]) -> None: ...

@@ -15,19 +15,34 @@ import asyncio
 import inspect
 import logging
 import sys
+from collections import defaultdict
 from collections.abc import Awaitable, Callable
-from typing import ClassVar, get_type_hints, overload
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ClassVar,
+    Generic,
+    Type,
+    TypeVar,
+    get_type_hints,
+    overload,
+)
 
 from google.protobuf.message import Message
-from redis.asyncio import Redis
+from redis.asyncio import Redis as _Redis
+from redis.asyncio.client import PubSub
 
-_redis: Redis[bytes] | None = None
+if TYPE_CHECKING:
+    Redis = _Redis[bytes]
+else:
+    Redis = _Redis
 
 logger = logging.getLogger(__name__)
+_T_Message = TypeVar("_T_Message", bound=Message, contravariant=True)
 
 
 class RedisManager:
-    _redis: ClassVar[Redis[bytes] | None] = None
+    _redis: ClassVar[Redis | None] = None
 
     @classmethod
     def initialize(cls, url: str) -> None:
@@ -53,12 +68,12 @@ class RedisManager:
         logger.info("Connected to Redis at %s", url)
 
     @classmethod
-    def get_redis(cls) -> Redis[bytes]:
+    def get_redis(cls) -> Redis:
         """Retrieves the Redis client instance.
 
         Returns
         -------
-        Redis[bytes]
+        Redis
             The Redis client instance.
 
         Raises
@@ -89,9 +104,6 @@ class RedisManager:
         cls._redis.connection_pool.disconnect()
         cls._redis = None
         logger.info("Redis connection closed")
-
-
-_channel_handlers: dict[str, list[Callable[..., Awaitable[None]]]] = {}
 
 
 class RedisPublisher:
@@ -141,8 +153,26 @@ class RedisPublisher:
         await self.publish_to_channel(self.channel, message)
 
 
+class _WaiterEntry(Generic[_T_Message]):
+    def __init__(
+        self,
+        expected_type: Type[_T_Message],
+        condition: Callable[[_T_Message], bool],
+    ) -> None:
+        self.expected_type = expected_type
+        self.condition = condition
+        self.queue: asyncio.Queue[_T_Message] = asyncio.Queue()
+
+
+_channel_handlers: dict[str, list[Callable[..., Awaitable[None]]]] = {}
+
+
 class RedisSubscriber:
     """Subscribes to channels and dispatches incoming protobuf messages to handlers."""
+
+    _pubsub: ClassVar[PubSub | None] = None
+    _subscribed: ClassVar[set[str]] = set()
+    _waiters: ClassVar[dict[str, list[_WaiterEntry[Any]]]] = defaultdict(list)
 
     @classmethod
     async def listen(cls) -> None:
@@ -164,39 +194,74 @@ class RedisSubscriber:
         """
 
         redis = RedisManager.get_redis()
-        pubsub = redis.pubsub()  # type: ignore
-        channels = list(_channel_handlers.keys())
-        if not channels:
-            logger.warning("No channels registered for subscription.")
-            return
+        cls._pubsub = redis.pubsub()  # type: ignore
+        await cls._update_subscriptions()
 
-        await pubsub.subscribe(*channels)  # type: ignore
-        logger.info("Subscribed to channels: %s", channels)
-
-        async for message in pubsub.listen():
+        async for message in cls._pubsub.listen():
             if message.get("type") != "message":
                 continue
+
+            logger.debug("Received message: %s", message)
 
             raw_channel = message["channel"]
             channel = (
                 raw_channel.decode() if isinstance(raw_channel, bytes) else raw_channel
             )
             data = message.get("data")
+
             handlers = _channel_handlers.get(channel, [])
-            if not handlers:
-                logger.warning("No handler for channel %s", channel)
+            waiters = cls._waiters.get(channel, [])
+
+            if not handlers and not waiters:
+                logger.warning("Nothing to do for channel %s", channel)
                 continue
 
-            for handler in handlers:
-                envelope_cls = getattr(handler, "_envelope_cls")
-                try:
-                    envelope = envelope_cls()
-                    envelope.ParseFromString(data)
-                    await handler(envelope)
-                except asyncio.CancelledError:
-                    return
-                except Exception:
-                    logger.exception("Error in handler for channel %s", channel)
+            if handlers:
+                envelope_cls = getattr(handlers[0], "_envelope_cls")
+            else:
+                envelope_cls = waiters[0].expected_type
+
+            try:
+                envelope = envelope_cls()
+                envelope.ParseFromString(data)
+            except Exception:
+                logger.exception("Failed to parse envelope for channel %s", channel)
+                continue
+
+            tasks = [asyncio.ensure_future(handler(envelope)) for handler in handlers]
+
+            for entry in waiters:
+                if isinstance(envelope, entry.expected_type) and entry.condition(
+                    envelope
+                ):
+                    entry.queue.put_nowait(envelope)
+
+            result = await asyncio.gather(*tasks, return_exceptions=True)
+
+            for res in result:
+                if isinstance(res, Exception):
+                    logger.exception("Handler raised an exception.")
+
+    @classmethod
+    async def _update_subscriptions(cls) -> None:
+        if cls._pubsub is None:
+            logger.warning(
+                "Redis pubsub is not initialized, cannot update subscriptions."
+            )
+            return
+
+        desired = set(_channel_handlers.keys()) | set(cls._waiters.keys())
+        new = desired - cls._subscribed
+        gone = cls._subscribed - desired
+
+        if new:
+            logger.debug("Subscribing to new channels: %s", new)
+            await cls._pubsub.subscribe(*new)  # type: ignore
+        if gone:
+            logger.debug("Unsubscribing from gone channels: %s", gone)
+            await cls._pubsub.unsubscribe(*gone)  # type: ignore
+
+        cls._subscribed = desired
 
     @overload
     @classmethod
@@ -327,9 +392,34 @@ class RedisSubscriber:
             return raw
         return None
 
+    @classmethod
+    async def wait_for_event(
+        cls,
+        channel: str,
+        expected_type: Type[_T_Message],
+        condition: Callable[[_T_Message], bool],
+        timeout: float = 5.0,
+    ) -> _T_Message | None:
+        # TODO: docs
+        entry = _WaiterEntry(expected_type, condition)
+        cls._waiters[channel].append(entry)
 
-class RedisPubSubHandlerMixin:
-    """Mixin for classes that want to handle Redis pub/sub events.
+        asyncio.create_task(RedisSubscriber._update_subscriptions())
+
+        try:
+            while True:
+                event = await asyncio.wait_for(entry.queue.get(), timeout=timeout)
+                if isinstance(event, expected_type) and condition(event):
+                    return event
+        except asyncio.TimeoutError:
+            return None
+        finally:
+            cls._waiters[channel].remove(entry)
+            asyncio.create_task(RedisSubscriber._update_subscriptions())
+
+
+class RedisPubSubHandlerCogMixin:
+    """Mixin for cog classes that want to handle Redis pub/sub events.
 
     This mixin automatically registers methods as handlers for Redis channels
     when they are decorated with the `@RedisSubscriber.subscribe` decorator.
@@ -345,7 +435,6 @@ class RedisPubSubHandlerMixin:
             @RedisSubscriber.subscribe("my_channel")
             async def handle_my_event(self, event: MyProtoEnvelope):
                 # Handle the event here
-                pass
     """
 
     _registered: list[tuple[str, Callable[..., Awaitable[None]]]]

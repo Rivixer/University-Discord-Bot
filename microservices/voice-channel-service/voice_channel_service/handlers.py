@@ -1,5 +1,5 @@
 """
-Event handlers for the voice channel service.
+Voice Channel Service Handlers Module
 
 This module subscribes to Redis Pub/Sub envelopes, dispatches them
 to the appropriate handler, and applies all business logic for:
@@ -18,10 +18,9 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from shared.gen.guild.v1.envelope_pb2 import GuildEventEnvelope
-from shared.gen.guild.v1.events_pb2 import GuildLeftEvent
 from shared.gen.voice_channel.v1.envelope_pb2 import (
-    VoiceChannelEventEnvelope,
-    VoiceChannelRequestEnvelope,
+    GatewayEnvelope,
+    ServiceEnvelope,
 )
 from shared.gen.voice_channel.v1.requests_pb2 import (
     CreateVoiceChannelRequest,
@@ -31,12 +30,13 @@ from shared.redis_client import RedisPublisher, RedisSubscriber
 
 from .database import get_session
 from .models import ChannelState, ServiceConfig
+from .rename_scheduler import cancel_cooldown
 from .settings import settings
 
 logger = logging.getLogger(__name__)
 
 _guild_locks: dict[int, asyncio.Lock] = {}
-_redis_request_publisher = RedisPublisher(f"{settings.redis_channel_base}:request")
+_redis_request_publisher = RedisPublisher(f"{settings.redis_channel_base}:service")
 
 
 def _lock_for_guild(guild_id: int) -> asyncio.Lock:
@@ -84,6 +84,8 @@ async def _handle_voice_channel_delete(channel_id: int) -> None:
         await session.commit()
         logger.info("Removed deleted voice channel %d", channel_id)
 
+    cancel_cooldown(state.guild_id, channel_id)
+
 
 async def _handle_user_joined(guild_id: int, channel_id: int) -> None:
     async with get_session() as session:
@@ -122,7 +124,7 @@ async def _handle_user_joined(guild_id: int, channel_id: int) -> None:
                 category_id=config.category_id,
                 name=new_name,
             )
-            envelope = VoiceChannelRequestEnvelope(create_channel_request=create_req)
+            envelope = ServiceEnvelope(create_channel_request=create_req)
             await _redis_request_publisher.publish(envelope)
 
 
@@ -163,10 +165,9 @@ async def _handle_user_left(guild_id: int, channel_id: int) -> None:
                 state.pending_deletion = True
                 await session.commit()
 
+                cancel_cooldown(state.guild_id, channel_id)
                 delete_req = DeleteVoiceChannelRequest(channel_id=channel_id)
-                envelope = VoiceChannelRequestEnvelope(
-                    delete_channel_request=delete_req
-                )
+                envelope = ServiceEnvelope(delete_channel_request=delete_req)
                 await _redis_request_publisher.publish(envelope)
 
 
@@ -176,8 +177,8 @@ async def _generate_channel_name(session: AsyncSession, config: ServiceConfig) -
 
 
 _EVENT_HANDLERS: dict[str, Callable[..., Awaitable[None]]] = {
-    "channel_created_event": _handle_voice_channel_create,
-    "channel_deleted_event": _handle_voice_channel_delete,
+    "created_event": _handle_voice_channel_create,
+    "deleted_event": _handle_voice_channel_delete,
     "user_joined_event": _handle_user_joined,
     "user_left_event": _handle_user_left,
 }
@@ -188,8 +189,8 @@ for evt_name, fn in _EVENT_HANDLERS.items():
     _HANDLER_PARAMS[evt_name] = set(sig.parameters.keys())
 
 
-@RedisSubscriber.subscribe(f"{settings.redis_channel_base}:event")
-async def handle_voice_channel_event(event: VoiceChannelEventEnvelope) -> None:
+@RedisSubscriber.subscribe(f"{settings.redis_channel_base}:gateway")
+async def handle_voice_channel_event(event: GatewayEnvelope) -> None:
     """|coro|
 
     Handles incoming voice channel events.
@@ -239,7 +240,6 @@ async def handle_voice_channel_event(event: VoiceChannelEventEnvelope) -> None:
 async def _handle_guild_left(guild_id: int) -> None:
     _guild_locks.pop(guild_id, None)
     async with get_session() as session:
-        logger.info(type(guild_id))
         if not (config := await _get_guild_config(session, guild_id)):
             logger.debug("No voice config for guild=%d; skipping guild left", guild_id)
             return
@@ -248,7 +248,7 @@ async def _handle_guild_left(guild_id: int) -> None:
         await session.commit()
 
 
-@RedisSubscriber.subscribe(f"{settings.redis_guild_base}:event")
+@RedisSubscriber.subscribe(f"{settings.redis_guild_base}:gateway")
 async def handle_guild_event(event: GuildEventEnvelope) -> None:
     """|coro|
 
@@ -263,14 +263,14 @@ async def handle_guild_event(event: GuildEventEnvelope) -> None:
     event : GuildEventEnvelope
         The guild event envelope containing the event data.
     """
-    event_type = event.WhichOneof("payload")
-    if not event_type:
+    payload = event.WhichOneof("payload")
+    if not payload:
         logger.warning("Received empty guild event envelope")
         return
 
-    payload = getattr(event, event_type)
-    if isinstance(payload, GuildLeftEvent):
-        guild_id = payload.guild_id
+    if payload == "left_event":
+        data = event.left_event
+        guild_id = data.guild_id
         lock = _lock_for_guild(guild_id)
         async with lock:
             await _handle_guild_left(guild_id)

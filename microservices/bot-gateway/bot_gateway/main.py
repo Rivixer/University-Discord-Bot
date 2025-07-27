@@ -10,7 +10,7 @@ from nextcord.ext import commands
 
 from shared.redis_client import RedisManager, RedisSubscriber
 
-from .services.grpc import serve
+from .infrastructure.grpc_server import serve
 from .settings import settings
 
 logging.basicConfig(
@@ -57,8 +57,8 @@ async def on_ready():
 def main():
     RedisManager.initialize(settings.redis_url)
 
-    bot.load_extension("bot_gateway.cogs.guild_cog")
-    bot.load_extension("bot_gateway.cogs.voice_channel_cog")
+    bot.load_extension("bot_gateway.features.guild.cog")
+    bot.load_extension("bot_gateway.features.voice_channel.cog")
 
     bot.loop.create_task(RedisSubscriber.listen(), name="redis-subscriber")
     bot.loop.create_task(serve(bot), name="grpc-server")

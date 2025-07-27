@@ -22,6 +22,9 @@ redis-dev = [
   "redis~=5.0",
   "types-redis~=4.6.0",
 ]
+pydantic = [
+  "pydantic~=2.11.7",
+]
 
 [tool.ruff]
 exclude = ["shared/gen"]

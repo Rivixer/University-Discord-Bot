@@ -24,25 +24,17 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1fvoice_channel/v1/requests.proto\x12\x10voice_channel.v1\"e\n\x19\x43reateVoiceChannelRequest\x12\x10\n\x08guild_id\x18\x01 \x01(\x03\x12\x18\n\x0b\x63\x61tegory_id\x18\x02 \x01(\x03H\x00\x88\x01\x01\x12\x0c\n\x04name\x18\x03 \x01(\tB\x0e\n\x0c_category_id\"/\n\x19\x44\x65leteVoiceChannelRequest\x12\x12\n\nchannel_id\x18\x01 \x01(\x03\"\xaa\x01\n\x19UpdateVoiceChannelRequest\x12\x12\n\nchannel_id\x18\x01 \x01(\x03\x12I\n\x07options\x18\x02 \x03(\x0b\x32\x38.voice_channel.v1.UpdateVoiceChannelRequest.OptionsEntry\x1a.\n\x0cOptionsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\"h\n\x1d\x43hangeVoiceChannelNameRequest\x12\x10\n\x08guild_id\x18\x01 \x01(\x03\x12\x12\n\nchannel_id\x18\x02 \x01(\x03\x12\x10\n\x08new_name\x18\x03 \x01(\t\x12\x0f\n\x07user_id\x18\x04 \x01(\x03\"j\n\x1e\x43hangeVoiceChannelLimitRequest\x12\x10\n\x08guild_id\x18\x01 \x01(\x03\x12\x12\n\nchannel_id\x18\x02 \x01(\x03\x12\x11\n\tnew_limit\x18\x03 \x01(\x05\x12\x0f\n\x07user_id\x18\x04 \x01(\x03\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1fvoice_channel/v1/requests.proto\x12\x10voice_channel.v1\"e\n\x19\x43reateVoiceChannelRequest\x12\x10\n\x08guild_id\x18\x01 \x01(\x03\x12\x18\n\x0b\x63\x61tegory_id\x18\x02 \x01(\x03H\x00\x88\x01\x01\x12\x0c\n\x04name\x18\x03 \x01(\tB\x0e\n\x0c_category_id\"A\n\x19\x44\x65leteVoiceChannelRequest\x12\x10\n\x08guild_id\x18\x01 \x01(\x03\x12\x12\n\nchannel_id\x18\x02 \x01(\x03\"S\n\x19RenameVoiceChannelRequest\x12\x10\n\x08guild_id\x18\x01 \x01(\x03\x12\x12\n\nchannel_id\x18\x02 \x01(\x03\x12\x10\n\x08new_name\x18\x03 \x01(\tb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'voice_channel.v1.requests_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
-  _globals['_UPDATEVOICECHANNELREQUEST_OPTIONSENTRY']._loaded_options = None
-  _globals['_UPDATEVOICECHANNELREQUEST_OPTIONSENTRY']._serialized_options = b'8\001'
   _globals['_CREATEVOICECHANNELREQUEST']._serialized_start=53
   _globals['_CREATEVOICECHANNELREQUEST']._serialized_end=154
   _globals['_DELETEVOICECHANNELREQUEST']._serialized_start=156
-  _globals['_DELETEVOICECHANNELREQUEST']._serialized_end=203
-  _globals['_UPDATEVOICECHANNELREQUEST']._serialized_start=206
-  _globals['_UPDATEVOICECHANNELREQUEST']._serialized_end=376
-  _globals['_UPDATEVOICECHANNELREQUEST_OPTIONSENTRY']._serialized_start=330
-  _globals['_UPDATEVOICECHANNELREQUEST_OPTIONSENTRY']._serialized_end=376
-  _globals['_CHANGEVOICECHANNELNAMEREQUEST']._serialized_start=378
-  _globals['_CHANGEVOICECHANNELNAMEREQUEST']._serialized_end=482
-  _globals['_CHANGEVOICECHANNELLIMITREQUEST']._serialized_start=484
-  _globals['_CHANGEVOICECHANNELLIMITREQUEST']._serialized_end=590
+  _globals['_DELETEVOICECHANNELREQUEST']._serialized_end=221
+  _globals['_RENAMEVOICECHANNELREQUEST']._serialized_start=223
+  _globals['_RENAMEVOICECHANNELREQUEST']._serialized_end=306
 # @@protoc_insertion_point(module_scope)

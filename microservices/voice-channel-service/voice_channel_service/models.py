@@ -1,5 +1,5 @@
 """
-Database models for the voice channel service.
+Voice Channel Service Models Module
 
 Two schema-contained tables:
 - `voice_channel.state`: Tracks the state of voice channels.
@@ -56,10 +56,12 @@ class ChannelState(Base):
         Boolean, nullable=False, default=False
     )
 
-    last_rename_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    last_rename_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     rename_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     rename_window_start: Mapped[datetime | None] = mapped_column(
-        DateTime, nullable=True
+        DateTime(timezone=True), nullable=True
     )
 
 

@@ -13,81 +13,65 @@ from . import requests_pb2
 DESCRIPTOR: google.protobuf.descriptor.FileDescriptor
 
 @typing.final
-class VoiceChannelEventEnvelope(google.protobuf.message.Message):
+class GatewayEnvelope(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
     USER_JOINED_EVENT_FIELD_NUMBER: builtins.int
     USER_LEFT_EVENT_FIELD_NUMBER: builtins.int
-    CHANNEL_CREATED_EVENT_FIELD_NUMBER: builtins.int
-    CHANNEL_DELETED_EVENT_FIELD_NUMBER: builtins.int
-    NAME_CHANGED_FIELD_NUMBER: builtins.int
-    NAME_CHANGE_REJECT_FIELD_NUMBER: builtins.int
-    LIMIT_CHANGED_FIELD_NUMBER: builtins.int
-    THROTTLE_AVAILABLE_FIELD_NUMBER: builtins.int
+    CREATED_EVENT_FIELD_NUMBER: builtins.int
+    DELETED_EVENT_FIELD_NUMBER: builtins.int
+    RENAME_EVENT_FIELD_NUMBER: builtins.int
     @property
     def user_joined_event(self) -> events_pb2.VoiceChannelUserJoinedEvent: ...
     @property
     def user_left_event(self) -> events_pb2.VoiceChannelUserLeftEvent: ...
     @property
-    def channel_created_event(self) -> events_pb2.VoiceChannelCreatedEvent: ...
+    def created_event(self) -> events_pb2.VoiceChannelCreatedEvent: ...
     @property
-    def channel_deleted_event(self) -> events_pb2.VoiceChannelDeletedEvent: ...
+    def deleted_event(self) -> events_pb2.VoiceChannelDeletedEvent: ...
     @property
-    def name_changed(self) -> events_pb2.BotVoiceChannelNameChangedEvent: ...
-    @property
-    def name_change_reject(self) -> events_pb2.BotVoiceChannelNameChangeRejectedEvent: ...
-    @property
-    def limit_changed(self) -> events_pb2.BotVoiceChannelLimitChangedEvent: ...
-    @property
-    def throttle_available(self) -> events_pb2.VoiceChannelThrottleAvailableEvent: ...
+    def rename_event(self) -> events_pb2.BotVoiceChannelRenameEvent: ...
     def __init__(
         self,
         *,
         user_joined_event: events_pb2.VoiceChannelUserJoinedEvent | None = ...,
         user_left_event: events_pb2.VoiceChannelUserLeftEvent | None = ...,
-        channel_created_event: events_pb2.VoiceChannelCreatedEvent | None = ...,
-        channel_deleted_event: events_pb2.VoiceChannelDeletedEvent | None = ...,
-        name_changed: events_pb2.BotVoiceChannelNameChangedEvent | None = ...,
-        name_change_reject: events_pb2.BotVoiceChannelNameChangeRejectedEvent | None = ...,
-        limit_changed: events_pb2.BotVoiceChannelLimitChangedEvent | None = ...,
-        throttle_available: events_pb2.VoiceChannelThrottleAvailableEvent | None = ...,
+        created_event: events_pb2.VoiceChannelCreatedEvent | None = ...,
+        deleted_event: events_pb2.VoiceChannelDeletedEvent | None = ...,
+        rename_event: events_pb2.BotVoiceChannelRenameEvent | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing.Literal["channel_created_event", b"channel_created_event", "channel_deleted_event", b"channel_deleted_event", "limit_changed", b"limit_changed", "name_change_reject", b"name_change_reject", "name_changed", b"name_changed", "payload", b"payload", "throttle_available", b"throttle_available", "user_joined_event", b"user_joined_event", "user_left_event", b"user_left_event"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing.Literal["channel_created_event", b"channel_created_event", "channel_deleted_event", b"channel_deleted_event", "limit_changed", b"limit_changed", "name_change_reject", b"name_change_reject", "name_changed", b"name_changed", "payload", b"payload", "throttle_available", b"throttle_available", "user_joined_event", b"user_joined_event", "user_left_event", b"user_left_event"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing.Literal["payload", b"payload"]) -> typing.Literal["user_joined_event", "user_left_event", "channel_created_event", "channel_deleted_event", "name_changed", "name_change_reject", "limit_changed", "throttle_available"] | None: ...
+    def HasField(self, field_name: typing.Literal["created_event", b"created_event", "deleted_event", b"deleted_event", "payload", b"payload", "rename_event", b"rename_event", "user_joined_event", b"user_joined_event", "user_left_event", b"user_left_event"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing.Literal["created_event", b"created_event", "deleted_event", b"deleted_event", "payload", b"payload", "rename_event", b"rename_event", "user_joined_event", b"user_joined_event", "user_left_event", b"user_left_event"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing.Literal["payload", b"payload"]) -> typing.Literal["user_joined_event", "user_left_event", "created_event", "deleted_event", "rename_event"] | None: ...
 
-global___VoiceChannelEventEnvelope = VoiceChannelEventEnvelope
+global___GatewayEnvelope = GatewayEnvelope
 
 @typing.final
-class VoiceChannelRequestEnvelope(google.protobuf.message.Message):
+class ServiceEnvelope(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
     CREATE_CHANNEL_REQUEST_FIELD_NUMBER: builtins.int
     DELETE_CHANNEL_REQUEST_FIELD_NUMBER: builtins.int
-    UPDATE_CHANNEL_REQUEST_FIELD_NUMBER: builtins.int
-    NAME_CHANGE_REQUEST_FIELD_NUMBER: builtins.int
-    LIMIT_CHANGE_REQUEST_FIELD_NUMBER: builtins.int
+    RENAME_CHANNEL_REQUEST_FIELD_NUMBER: builtins.int
+    RENAME_COOLDOWN_EXPIRED_EVENT_FIELD_NUMBER: builtins.int
     @property
     def create_channel_request(self) -> requests_pb2.CreateVoiceChannelRequest: ...
     @property
     def delete_channel_request(self) -> requests_pb2.DeleteVoiceChannelRequest: ...
     @property
-    def update_channel_request(self) -> requests_pb2.UpdateVoiceChannelRequest: ...
+    def rename_channel_request(self) -> requests_pb2.RenameVoiceChannelRequest: ...
     @property
-    def name_change_request(self) -> requests_pb2.ChangeVoiceChannelNameRequest: ...
-    @property
-    def limit_change_request(self) -> requests_pb2.ChangeVoiceChannelLimitRequest: ...
+    def rename_cooldown_expired_event(self) -> events_pb2.BotVoiceChannelRenameCooldownExpiredEvent: ...
     def __init__(
         self,
         *,
         create_channel_request: requests_pb2.CreateVoiceChannelRequest | None = ...,
         delete_channel_request: requests_pb2.DeleteVoiceChannelRequest | None = ...,
-        update_channel_request: requests_pb2.UpdateVoiceChannelRequest | None = ...,
-        name_change_request: requests_pb2.ChangeVoiceChannelNameRequest | None = ...,
-        limit_change_request: requests_pb2.ChangeVoiceChannelLimitRequest | None = ...,
+        rename_channel_request: requests_pb2.RenameVoiceChannelRequest | None = ...,
+        rename_cooldown_expired_event: events_pb2.BotVoiceChannelRenameCooldownExpiredEvent | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing.Literal["create_channel_request", b"create_channel_request", "delete_channel_request", b"delete_channel_request", "limit_change_request", b"limit_change_request", "name_change_request", b"name_change_request", "payload", b"payload", "update_channel_request", b"update_channel_request"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing.Literal["create_channel_request", b"create_channel_request", "delete_channel_request", b"delete_channel_request", "limit_change_request", b"limit_change_request", "name_change_request", b"name_change_request", "payload", b"payload", "update_channel_request", b"update_channel_request"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing.Literal["payload", b"payload"]) -> typing.Literal["create_channel_request", "delete_channel_request", "update_channel_request", "name_change_request", "limit_change_request"] | None: ...
+    def HasField(self, field_name: typing.Literal["create_channel_request", b"create_channel_request", "delete_channel_request", b"delete_channel_request", "payload", b"payload", "rename_channel_request", b"rename_channel_request", "rename_cooldown_expired_event", b"rename_cooldown_expired_event"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing.Literal["create_channel_request", b"create_channel_request", "delete_channel_request", b"delete_channel_request", "payload", b"payload", "rename_channel_request", b"rename_channel_request", "rename_cooldown_expired_event", b"rename_cooldown_expired_event"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing.Literal["payload", b"payload"]) -> typing.Literal["create_channel_request", "delete_channel_request", "rename_channel_request", "rename_cooldown_expired_event"] | None: ...
 
-global___VoiceChannelRequestEnvelope = VoiceChannelRequestEnvelope
+global___ServiceEnvelope = ServiceEnvelope

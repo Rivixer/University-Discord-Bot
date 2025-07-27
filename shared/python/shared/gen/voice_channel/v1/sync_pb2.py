@@ -24,7 +24,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1bvoice_channel/v1/sync.proto\x12\x10voice_channel.v1\"6\n\rGuildCategory\x12\x10\n\x08guild_id\x18\x01 \x01(\x03\x12\x13\n\x0b\x63\x61tegory_id\x18\x02 \x01(\x03\"T\n!BatchGetVoiceChannelStatesRequest\x12/\n\x06guilds\x18\x01 \x03(\x0b\x32\x1f.voice_channel.v1.GuildCategory\"_\n\"BatchGetVoiceChannelStatesResponse\x12\x39\n\x06states\x18\x01 \x03(\x0b\x32).voice_channel.v1.GuildVoiceChannelStates\"h\n\x17GuildVoiceChannelStates\x12\x10\n\x08guild_id\x18\x01 \x01(\x03\x12;\n\x0e\x63hannel_states\x18\x02 \x03(\x0b\x32#.voice_channel.v1.VoiceChannelState\"=\n\x11VoiceChannelState\x12\x12\n\nchannel_id\x18\x01 \x01(\x03\x12\x14\n\x0c\x61\x63tive_users\x18\x02 \x01(\x05\"L\n$GetVoiceChannelThrottleStatusRequest\x12\x10\n\x08guild_id\x18\x01 \x01(\x03\x12\x12\n\nchannel_id\x18\x02 \x01(\x03\"W\n\"VoiceChannelThrottleStatusResponse\x12\x19\n\x11remaining_changes\x18\x01 \x01(\x05\x12\x16\n\x0enext_available\x18\x02 \x01(\x03\x32\xa4\x01\n\x18VoiceChannelStateService\x12\x87\x01\n\x1a\x42\x61tchGetVoiceChannelStates\x12\x33.voice_channel.v1.BatchGetVoiceChannelStatesRequest\x1a\x34.voice_channel.v1.BatchGetVoiceChannelStatesResponse2\xad\x01\n\x1bVoiceChannelThrottleService\x12\x8d\x01\n\x1dGetVoiceChannelThrottleStatus\x12\x36.voice_channel.v1.GetVoiceChannelThrottleStatusRequest\x1a\x34.voice_channel.v1.VoiceChannelThrottleStatusResponseb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1bvoice_channel/v1/sync.proto\x12\x10voice_channel.v1\"6\n\rGuildCategory\x12\x10\n\x08guild_id\x18\x01 \x01(\x03\x12\x13\n\x0b\x63\x61tegory_id\x18\x02 \x01(\x03\"T\n!BatchGetVoiceChannelStatesRequest\x12/\n\x06guilds\x18\x01 \x03(\x0b\x32\x1f.voice_channel.v1.GuildCategory\"_\n\"BatchGetVoiceChannelStatesResponse\x12\x39\n\x06states\x18\x01 \x03(\x0b\x32).voice_channel.v1.GuildVoiceChannelStates\"h\n\x17GuildVoiceChannelStates\x12\x10\n\x08guild_id\x18\x01 \x01(\x03\x12;\n\x0e\x63hannel_states\x18\x02 \x03(\x0b\x32#.voice_channel.v1.VoiceChannelState\"=\n\x11VoiceChannelState\x12\x12\n\nchannel_id\x18\x01 \x01(\x03\x12\x14\n\x0c\x61\x63tive_users\x18\x02 \x01(\x05\x32\xa4\x01\n\x18VoiceChannelStateService\x12\x87\x01\n\x1a\x42\x61tchGetVoiceChannelStates\x12\x33.voice_channel.v1.BatchGetVoiceChannelStatesRequest\x1a\x34.voice_channel.v1.BatchGetVoiceChannelStatesResponseb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -41,12 +41,6 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['_GUILDVOICECHANNELSTATES']._serialized_end=392
   _globals['_VOICECHANNELSTATE']._serialized_start=394
   _globals['_VOICECHANNELSTATE']._serialized_end=455
-  _globals['_GETVOICECHANNELTHROTTLESTATUSREQUEST']._serialized_start=457
-  _globals['_GETVOICECHANNELTHROTTLESTATUSREQUEST']._serialized_end=533
-  _globals['_VOICECHANNELTHROTTLESTATUSRESPONSE']._serialized_start=535
-  _globals['_VOICECHANNELTHROTTLESTATUSRESPONSE']._serialized_end=622
-  _globals['_VOICECHANNELSTATESERVICE']._serialized_start=625
-  _globals['_VOICECHANNELSTATESERVICE']._serialized_end=789
-  _globals['_VOICECHANNELTHROTTLESERVICE']._serialized_start=792
-  _globals['_VOICECHANNELTHROTTLESERVICE']._serialized_end=965
+  _globals['_VOICECHANNELSTATESERVICE']._serialized_start=458
+  _globals['_VOICECHANNELSTATESERVICE']._serialized_end=622
 # @@protoc_insertion_point(module_scope)

@@ -29,18 +29,3 @@ message VoiceChannelState {
   int64 channel_id = 1;
   int32 active_users = 2;
 }
-
-message GetVoiceChannelThrottleStatusRequest {
-  int64 guild_id   = 1;
-  int64 channel_id = 2;
-}
-
-message VoiceChannelThrottleStatusResponse {
-  int32 remaining_changes = 1;
-  int64 next_available = 2;
-}
-
-service VoiceChannelThrottleService {
-  rpc GetVoiceChannelThrottleStatus(GetVoiceChannelThrottleStatusRequest)
-    returns (VoiceChannelThrottleStatusResponse);
-}

@@ -5,25 +5,21 @@ package voice_channel.v1;
 import "voice_channel/v1/events.proto";
 import "voice_channel/v1/requests.proto";
 
-message VoiceChannelEventEnvelope {
+message GatewayEnvelope {
   oneof payload {
     VoiceChannelUserJoinedEvent user_joined_event = 1;
     VoiceChannelUserLeftEvent user_left_event = 2;
-    VoiceChannelCreatedEvent channel_created_event = 3;
-    VoiceChannelDeletedEvent channel_deleted_event = 4;
-    BotVoiceChannelNameChangedEvent name_changed = 5;
-    BotVoiceChannelNameChangeRejectedEvent name_change_reject = 6;
-    BotVoiceChannelLimitChangedEvent limit_changed = 7;
-    VoiceChannelThrottleAvailableEvent throttle_available = 8;
+    VoiceChannelCreatedEvent created_event = 3;
+    VoiceChannelDeletedEvent deleted_event = 4;
+    BotVoiceChannelRenameEvent rename_event = 5;
   }
 }
 
-message VoiceChannelRequestEnvelope {
+message ServiceEnvelope {
   oneof payload {
     CreateVoiceChannelRequest create_channel_request = 1;
     DeleteVoiceChannelRequest delete_channel_request = 2;
-    UpdateVoiceChannelRequest update_channel_request = 3;
-    ChangeVoiceChannelNameRequest name_change_request = 4;
-    ChangeVoiceChannelLimitRequest limit_change_request = 5;
+    RenameVoiceChannelRequest rename_channel_request = 3;
+    BotVoiceChannelRenameCooldownExpiredEvent rename_cooldown_expired_event = 4;
   }
 }

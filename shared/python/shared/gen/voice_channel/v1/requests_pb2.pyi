@@ -4,9 +4,7 @@ isort:skip_file
 """
 
 import builtins
-import collections.abc
 import google.protobuf.descriptor
-import google.protobuf.internal.containers
 import google.protobuf.message
 import typing
 
@@ -39,96 +37,37 @@ global___CreateVoiceChannelRequest = CreateVoiceChannelRequest
 class DeleteVoiceChannelRequest(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
+    GUILD_ID_FIELD_NUMBER: builtins.int
     CHANNEL_ID_FIELD_NUMBER: builtins.int
+    guild_id: builtins.int
     channel_id: builtins.int
     def __init__(
         self,
         *,
+        guild_id: builtins.int = ...,
         channel_id: builtins.int = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing.Literal["channel_id", b"channel_id"]) -> None: ...
+    def ClearField(self, field_name: typing.Literal["channel_id", b"channel_id", "guild_id", b"guild_id"]) -> None: ...
 
 global___DeleteVoiceChannelRequest = DeleteVoiceChannelRequest
 
 @typing.final
-class UpdateVoiceChannelRequest(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
-    @typing.final
-    class OptionsEntry(google.protobuf.message.Message):
-        DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
-        KEY_FIELD_NUMBER: builtins.int
-        VALUE_FIELD_NUMBER: builtins.int
-        key: builtins.str
-        value: builtins.str
-        def __init__(
-            self,
-            *,
-            key: builtins.str = ...,
-            value: builtins.str = ...,
-        ) -> None: ...
-        def ClearField(self, field_name: typing.Literal["key", b"key", "value", b"value"]) -> None: ...
-
-    CHANNEL_ID_FIELD_NUMBER: builtins.int
-    OPTIONS_FIELD_NUMBER: builtins.int
-    channel_id: builtins.int
-    @property
-    def options(self) -> google.protobuf.internal.containers.ScalarMap[builtins.str, builtins.str]: ...
-    def __init__(
-        self,
-        *,
-        channel_id: builtins.int = ...,
-        options: collections.abc.Mapping[builtins.str, builtins.str] | None = ...,
-    ) -> None: ...
-    def ClearField(self, field_name: typing.Literal["channel_id", b"channel_id", "options", b"options"]) -> None: ...
-
-global___UpdateVoiceChannelRequest = UpdateVoiceChannelRequest
-
-@typing.final
-class ChangeVoiceChannelNameRequest(google.protobuf.message.Message):
+class RenameVoiceChannelRequest(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
     GUILD_ID_FIELD_NUMBER: builtins.int
     CHANNEL_ID_FIELD_NUMBER: builtins.int
     NEW_NAME_FIELD_NUMBER: builtins.int
-    USER_ID_FIELD_NUMBER: builtins.int
     guild_id: builtins.int
     channel_id: builtins.int
     new_name: builtins.str
-    user_id: builtins.int
     def __init__(
         self,
         *,
         guild_id: builtins.int = ...,
         channel_id: builtins.int = ...,
         new_name: builtins.str = ...,
-        user_id: builtins.int = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing.Literal["channel_id", b"channel_id", "guild_id", b"guild_id", "new_name", b"new_name", "user_id", b"user_id"]) -> None: ...
+    def ClearField(self, field_name: typing.Literal["channel_id", b"channel_id", "guild_id", b"guild_id", "new_name", b"new_name"]) -> None: ...
 
-global___ChangeVoiceChannelNameRequest = ChangeVoiceChannelNameRequest
-
-@typing.final
-class ChangeVoiceChannelLimitRequest(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
-    GUILD_ID_FIELD_NUMBER: builtins.int
-    CHANNEL_ID_FIELD_NUMBER: builtins.int
-    NEW_LIMIT_FIELD_NUMBER: builtins.int
-    USER_ID_FIELD_NUMBER: builtins.int
-    guild_id: builtins.int
-    channel_id: builtins.int
-    new_limit: builtins.int
-    user_id: builtins.int
-    def __init__(
-        self,
-        *,
-        guild_id: builtins.int = ...,
-        channel_id: builtins.int = ...,
-        new_limit: builtins.int = ...,
-        user_id: builtins.int = ...,
-    ) -> None: ...
-    def ClearField(self, field_name: typing.Literal["channel_id", b"channel_id", "guild_id", b"guild_id", "new_limit", b"new_limit", "user_id", b"user_id"]) -> None: ...
-
-global___ChangeVoiceChannelLimitRequest = ChangeVoiceChannelLimitRequest
+global___RenameVoiceChannelRequest = RenameVoiceChannelRequest

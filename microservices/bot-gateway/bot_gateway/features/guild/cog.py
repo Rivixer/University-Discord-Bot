@@ -11,11 +11,10 @@ import logging
 from nextcord import Guild
 from nextcord.ext import commands
 
+from bot_gateway.settings import settings
 from shared.gen.guild.v1.envelope_pb2 import GuildEventEnvelope
 from shared.gen.guild.v1.events_pb2 import GuildJoinedEvent, GuildLeftEvent
 from shared.redis_client import RedisPublisher
-
-from ..settings import settings
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +28,7 @@ class GuildCog(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.redis_event_publisher = RedisPublisher(
-            f"{settings.redis_guild_base}:event"
+            f"{settings.redis_guild_base}:gateway"
         )
         logger.info("GuildCog initialized")
 

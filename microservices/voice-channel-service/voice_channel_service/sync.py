@@ -1,7 +1,7 @@
 """
-Synchronization module for the voice channel service.
+Voice Channel Service Synchronization Module
 
-This module provides functionality to periodically synchronize voice channel states
+Provides functionality to periodically synchronize voice channel states
 and guild configurations with the bot gateway service.
 
 Defines:
@@ -17,7 +17,7 @@ import random
 from collections.abc import Awaitable, Callable, Sequence
 
 import grpc
-from sqlalchemy import delete, select
+from sqlalchemy import delete, select, tuple_
 
 from shared.gen.guild.v1.sync_pb2 import GetGuildIdsRequest, GetGuildIdsResponse
 from shared.gen.guild.v1.sync_pb2_grpc import GuildServiceStub
@@ -30,6 +30,7 @@ from shared.gen.voice_channel.v1.sync_pb2_grpc import VoiceChannelStateServiceSt
 
 from .database import get_session
 from .models import ChannelState, ServiceConfig
+from .rename_scheduler import cancel_cooldown
 from .settings import settings
 
 logger = logging.getLogger(__name__)
@@ -101,21 +102,57 @@ class VoiceChannelSyncClient:
         self, response: BatchGetVoiceChannelStatesResponse
     ) -> None:
         async with get_session() as session:
-            guild_ids = [state.guild_id for state in response.states]
-            await session.execute(
-                delete(ChannelState).where(ChannelState.guild_id.in_(guild_ids))
-            )
-
-            new_states = [
-                ChannelState(
-                    guild_id=state.guild_id,
-                    channel_id=ch.channel_id,
-                    active_users=ch.active_users,
-                )
+            new_keys = {
+                (state.guild_id, ch.channel_id)
                 for state in response.states
                 for ch in state.channel_states
-            ]
-            session.add_all(new_states)
+            }
+
+            existing_entries = (
+                (
+                    await session.execute(
+                        select(ChannelState).where(
+                            ChannelState.guild_id.in_(
+                                [state.guild_id for state in response.states]
+                            )
+                        )
+                    )
+                )
+                .scalars()
+                .all()
+            )
+
+            existing_map: dict[tuple[int, int], ChannelState] = {
+                (entry.guild_id, entry.channel_id): entry for entry in existing_entries
+            }
+
+            existing_keys = set(existing_map.keys())
+            to_remove = existing_keys - new_keys
+            if to_remove:
+                for key in to_remove:
+                    cancel_cooldown(*key)
+
+                await session.execute(
+                    delete(ChannelState).where(
+                        tuple_(ChannelState.guild_id, ChannelState.channel_id).in_(
+                            to_remove
+                        )
+                    )
+                )
+
+            for state in response.states:
+                for ch in state.channel_states:
+                    key = (state.guild_id, ch.channel_id)
+                    if key in existing_map:
+                        existing_map[key].active_users = ch.active_users
+                    else:
+                        session.add(
+                            ChannelState(
+                                guild_id=state.guild_id,
+                                channel_id=ch.channel_id,
+                                active_users=ch.active_users,
+                            )
+                        )
 
             await session.commit()
 

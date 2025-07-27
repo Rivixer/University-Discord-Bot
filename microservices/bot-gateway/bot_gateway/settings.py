@@ -21,6 +21,8 @@ class Settings(BaseSettings):
         The base key for guild-related data in Redis.
     redis_voice_channel_base : str
         The base key for voice channel-related data in Redis.
+    voice_channel_service_url : str
+        The URL for the voice channel service.
     grpc_port : int
         The port for the gRPC server.
     """
@@ -34,6 +36,8 @@ class Settings(BaseSettings):
     redis_url: str = "redis://localhost:6379/0"
     redis_guild_base: str = "guild"
     redis_voice_channel_base: str = "voice"
+
+    voice_channel_service_url: str = "http://voice-channel-service:8080"
 
     grpc_port: int = 50051
 

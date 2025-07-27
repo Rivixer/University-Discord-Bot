@@ -1,3 +1,9 @@
+"""
+Voice Channel Service Settings Module
+
+This module defines the settings for the voice channel service.
+"""
+
 from pydantic_settings import BaseSettings
 
 
@@ -41,7 +47,7 @@ class Settings(BaseSettings):
     redis_guild_base: str = "guild"
 
     uvicorn_host: str = "0.0.0.0"
-    uvicorn_port: int = 8000
+    uvicorn_port: int = 8080
     uvicorn_reload: bool = False
 
     voice_sync_interval: int = 60

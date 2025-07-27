@@ -10,7 +10,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy shared code and install it
 COPY shared/python ./shared/
-RUN pip install --no-cache-dir -e shared[proto] shared[redis]
+RUN pip install --no-cache-dir -e shared[proto] shared[redis] shared[pydantic]
 
 # Copy application code
 COPY microservices/bot-gateway ./

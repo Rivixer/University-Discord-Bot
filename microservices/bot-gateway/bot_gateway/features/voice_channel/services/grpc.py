@@ -1,5 +1,8 @@
 """
-gRPC service for managing voice channel states in Discord.
+Voice Channel gRPC Service
+
+Provides VoiceChannelSyncServicer, a gRPC service for synchronizing voice channel states
+with the bot.
 """
 
 from __future__ import annotations

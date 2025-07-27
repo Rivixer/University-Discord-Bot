@@ -1,45 +1,33 @@
 """
-Voice Channel Service for managing Discord voice channels.
+Discord Voice Channel Manager
+
+Provides DiscordVoiceChannelManager, a manager for handling voice channel operations
+in Discord, including creating, deleting, and editing voice channels.
 """
 
-import functools
 import logging
-from collections.abc import Callable
-from typing import Any
+from typing import Any, overload
 
 import nextcord
 from nextcord import VoiceChannel
 from nextcord.ext import commands
 
+from bot_gateway.core.error_handlers import handle_discord_errors
+
+from .exceptions import DiscordVoiceChannelManagerError
+
 logger = logging.getLogger(__name__)
 
 
-class VoiceChannelServiceError(Exception):
-    """Custom exception for voice channel service errors."""
+class DiscordVoiceChannelManager:
+    """Manager for handling voice channel operations in Discord."""
 
-
-def _handle_discord_errors(func: Callable[..., Any]) -> Callable[..., Any]:
-    @functools.wraps(func)
-    async def wrapper(self: ..., *args: Any, **kwargs: Any):
-        try:
-            return await func(self, *args, **kwargs)
-        except nextcord.Forbidden as e:
-            logger.error("Missing permissions: %s", e)
-            raise VoiceChannelServiceError("Missing permissions") from e
-        except nextcord.HTTPException as e:
-            logger.exception("HTTP error while processing voice channel: %s", e)
-            raise VoiceChannelServiceError("HTTP error") from e
-
-    return wrapper
-
-
-class VoiceChannelService:
-    """Service for managing voice channels in Discord."""
+    bot: commands.Bot
 
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
-    @_handle_discord_errors
+    @handle_discord_errors(DiscordVoiceChannelManagerError)
     async def create_channel(
         self, guild_id: int, category_id: int, name: str, **options: Any
     ) -> VoiceChannel:
@@ -63,16 +51,16 @@ class VoiceChannelService:
 
         Raises
         ------
-        VoiceChannelServiceError
+        VoiceChannelManagerError
             If the guild or category is not found, or if there are permission issues.
         """
         if not (guild := self.bot.get_guild(guild_id)):
             logger.error("Guild not found: %s", guild_id)
-            raise VoiceChannelServiceError("Guild not found")
+            raise DiscordVoiceChannelManagerError("Guild not found")
 
         if not (category := nextcord.utils.get(guild.categories, id=category_id)):
             logger.error("Category not found: %s", category_id)
-            raise VoiceChannelServiceError("Category not found")
+            raise DiscordVoiceChannelManagerError("Category not found")
 
         logger.info(
             "Creating voice channel '%s' in category '%s' for guild '%s'",
@@ -84,7 +72,7 @@ class VoiceChannelService:
         channel = await category.create_voice_channel(name=name, **options)
         return channel
 
-    @_handle_discord_errors
+    @handle_discord_errors(DiscordVoiceChannelManagerError)
     async def delete_channel(self, channel_id: int, reason: str | None = None) -> None:
         """Deletes a voice channel by its ID.
 
@@ -97,17 +85,17 @@ class VoiceChannelService:
 
         Raises
         ------
-        VoiceChannelServiceError
+        VoiceChannelManagerError
             If the channel is not found, or if it is not a voice channel,
             or if there are permission issues.
         """
         if not (channel := self.bot.get_channel(channel_id)):
             logger.error("Channel not found: %s", channel_id)
-            raise VoiceChannelServiceError("Channel not found")
+            raise DiscordVoiceChannelManagerError("Channel not found")
 
         if not isinstance(channel, VoiceChannel):
             logger.error("Channel is not a voice channel: %s", channel_id)
-            raise VoiceChannelServiceError("Channel is not a voice channel")
+            raise DiscordVoiceChannelManagerError("Channel is not a voice channel")
 
         logger.info(
             "Deleting voice channel '%s' in category '%s' for guild '%s'",
@@ -118,13 +106,35 @@ class VoiceChannelService:
 
         await channel.delete(reason=reason)
 
-    @_handle_discord_errors
-    async def edit_channel(self, channel_id: int, **options: Any) -> VoiceChannel:
+    @overload
+    async def edit_channel(self, channel: VoiceChannel, **options: Any) -> None:
         """Edits a voice channel with the given options.
 
         Parameters
         ----------
-        channel_id : int
+        channel : VoiceChannel
+            The voice channel to edit.
+        options : Any
+            The options to edit the voice channel, such as name, bitrate, user limit, etc.
+
+        Returns
+        -------
+        nextcord.VoiceChannel
+            The edited voice channel.
+
+        Raises
+        ------
+        VoiceChannelManagerError
+            If the channel is not found or if it is not a voice channel.
+        """
+
+    @overload
+    async def edit_channel(self, channel: int, **options: Any) -> None:
+        """Edits a voice channel with the given options.
+
+        Parameters
+        ----------
+        channel : int
             The ID of the voice channel to edit.
         options : Any
             The options to edit the voice channel, such as name, bitrate, user limit, etc.
@@ -136,16 +146,22 @@ class VoiceChannelService:
 
         Raises
         ------
-        VoiceChannelServiceError
+        VoiceChannelManagerError
             If the channel is not found or if it is not a voice channel.
         """
-        if not (channel := self.bot.get_channel(channel_id)):
-            logger.error("Channel not found: %s", channel_id)
-            raise VoiceChannelServiceError("Channel not found")
 
-        if not isinstance(channel, VoiceChannel):
-            logger.error("Channel is not a voice channel: %s", channel_id)
-            raise VoiceChannelServiceError("Channel is not a voice channel")
+    @handle_discord_errors(DiscordVoiceChannelManagerError)
+    async def edit_channel(self, _channel: int | VoiceChannel, **options: Any) -> None:
+        if isinstance(_channel, int):
+            if not (channel := self.bot.get_channel(_channel)):
+                logger.error("Channel not found: %s", _channel)
+                raise DiscordVoiceChannelManagerError("Channel not found")
+
+            if not isinstance(channel, VoiceChannel):
+                logger.error("Channel is not a voice channel: %s", _channel)
+                raise DiscordVoiceChannelManagerError("Channel is not a voice channel")
+        else:
+            channel = _channel
 
         logger.info(
             "Editing voice channel '%s' in guild '%s'",
@@ -154,4 +170,3 @@ class VoiceChannelService:
         )
 
         await channel.edit(**options)
-        return channel

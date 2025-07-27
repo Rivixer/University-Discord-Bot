@@ -98,39 +98,3 @@ class VoiceChannelState(google.protobuf.message.Message):
     def ClearField(self, field_name: typing.Literal["active_users", b"active_users", "channel_id", b"channel_id"]) -> None: ...
 
 global___VoiceChannelState = VoiceChannelState
-
-@typing.final
-class GetVoiceChannelThrottleStatusRequest(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
-    GUILD_ID_FIELD_NUMBER: builtins.int
-    CHANNEL_ID_FIELD_NUMBER: builtins.int
-    guild_id: builtins.int
-    channel_id: builtins.int
-    def __init__(
-        self,
-        *,
-        guild_id: builtins.int = ...,
-        channel_id: builtins.int = ...,
-    ) -> None: ...
-    def ClearField(self, field_name: typing.Literal["channel_id", b"channel_id", "guild_id", b"guild_id"]) -> None: ...
-
-global___GetVoiceChannelThrottleStatusRequest = GetVoiceChannelThrottleStatusRequest
-
-@typing.final
-class VoiceChannelThrottleStatusResponse(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
-    REMAINING_CHANGES_FIELD_NUMBER: builtins.int
-    NEXT_AVAILABLE_FIELD_NUMBER: builtins.int
-    remaining_changes: builtins.int
-    next_available: builtins.int
-    def __init__(
-        self,
-        *,
-        remaining_changes: builtins.int = ...,
-        next_available: builtins.int = ...,
-    ) -> None: ...
-    def ClearField(self, field_name: typing.Literal["next_available", b"next_available", "remaining_changes", b"remaining_changes"]) -> None: ...
-
-global___VoiceChannelThrottleStatusResponse = VoiceChannelThrottleStatusResponse

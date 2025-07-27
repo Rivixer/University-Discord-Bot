@@ -1,8 +1,8 @@
-"""gRPC service for synchronizing guild IDs with the bot.
+"""
+Guild Synchronization gRPC Service
 
-This module defines a gRPC service that allows the bot to fetch and persist
-guild IDs from the bot's current state. It provides a method to retrieve
-the list of guild IDs the bot is currently connected to.
+Provides GuildSyncServicer, a gRPC servicer for synchronizing the IDs
+of guilds the bot is connected to.
 """
 
 from __future__ import annotations
@@ -21,7 +21,7 @@ if TYPE_CHECKING:
 
 
 class GuildSyncServicer(GuildServiceServicer):
-    """gRPC service for synchronizing guild IDs with the bot."""
+    """gRPC service for synchronizing the IDs of guilds the bot is connected to."""
 
     bot: commands.Bot
 

@@ -109,79 +109,28 @@ class VoiceChannelDeletedEvent(google.protobuf.message.Message):
 global___VoiceChannelDeletedEvent = VoiceChannelDeletedEvent
 
 @typing.final
-class BotVoiceChannelNameChangedEvent(google.protobuf.message.Message):
+class BotVoiceChannelRenameEvent(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
     GUILD_ID_FIELD_NUMBER: builtins.int
     CHANNEL_ID_FIELD_NUMBER: builtins.int
     NEW_NAME_FIELD_NUMBER: builtins.int
-    TRIGGERED_BY_FIELD_NUMBER: builtins.int
     guild_id: builtins.int
     channel_id: builtins.int
     new_name: builtins.str
-    triggered_by: builtins.int
     def __init__(
         self,
         *,
         guild_id: builtins.int = ...,
         channel_id: builtins.int = ...,
         new_name: builtins.str = ...,
-        triggered_by: builtins.int = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing.Literal["channel_id", b"channel_id", "guild_id", b"guild_id", "new_name", b"new_name", "triggered_by", b"triggered_by"]) -> None: ...
+    def ClearField(self, field_name: typing.Literal["channel_id", b"channel_id", "guild_id", b"guild_id", "new_name", b"new_name"]) -> None: ...
 
-global___BotVoiceChannelNameChangedEvent = BotVoiceChannelNameChangedEvent
+global___BotVoiceChannelRenameEvent = BotVoiceChannelRenameEvent
 
 @typing.final
-class BotVoiceChannelNameChangeRejectedEvent(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
-    GUILD_ID_FIELD_NUMBER: builtins.int
-    CHANNEL_ID_FIELD_NUMBER: builtins.int
-    TRIGGERED_BY_FIELD_NUMBER: builtins.int
-    NEXT_AVAILABLE_FIELD_NUMBER: builtins.int
-    guild_id: builtins.int
-    channel_id: builtins.int
-    triggered_by: builtins.int
-    next_available: builtins.int
-    def __init__(
-        self,
-        *,
-        guild_id: builtins.int = ...,
-        channel_id: builtins.int = ...,
-        triggered_by: builtins.int = ...,
-        next_available: builtins.int = ...,
-    ) -> None: ...
-    def ClearField(self, field_name: typing.Literal["channel_id", b"channel_id", "guild_id", b"guild_id", "next_available", b"next_available", "triggered_by", b"triggered_by"]) -> None: ...
-
-global___BotVoiceChannelNameChangeRejectedEvent = BotVoiceChannelNameChangeRejectedEvent
-
-@typing.final
-class BotVoiceChannelLimitChangedEvent(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
-    GUILD_ID_FIELD_NUMBER: builtins.int
-    CHANNEL_ID_FIELD_NUMBER: builtins.int
-    NEW_LIMIT_FIELD_NUMBER: builtins.int
-    TRIGGERED_BY_FIELD_NUMBER: builtins.int
-    guild_id: builtins.int
-    channel_id: builtins.int
-    new_limit: builtins.int
-    triggered_by: builtins.int
-    def __init__(
-        self,
-        *,
-        guild_id: builtins.int = ...,
-        channel_id: builtins.int = ...,
-        new_limit: builtins.int = ...,
-        triggered_by: builtins.int = ...,
-    ) -> None: ...
-    def ClearField(self, field_name: typing.Literal["channel_id", b"channel_id", "guild_id", b"guild_id", "new_limit", b"new_limit", "triggered_by", b"triggered_by"]) -> None: ...
-
-global___BotVoiceChannelLimitChangedEvent = BotVoiceChannelLimitChangedEvent
-
-@typing.final
-class VoiceChannelThrottleAvailableEvent(google.protobuf.message.Message):
+class BotVoiceChannelRenameCooldownExpiredEvent(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
     GUILD_ID_FIELD_NUMBER: builtins.int
@@ -196,4 +145,4 @@ class VoiceChannelThrottleAvailableEvent(google.protobuf.message.Message):
     ) -> None: ...
     def ClearField(self, field_name: typing.Literal["channel_id", b"channel_id", "guild_id", b"guild_id"]) -> None: ...
 
-global___VoiceChannelThrottleAvailableEvent = VoiceChannelThrottleAvailableEvent
+global___BotVoiceChannelRenameCooldownExpiredEvent = BotVoiceChannelRenameCooldownExpiredEvent

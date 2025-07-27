@@ -1,5 +1,7 @@
 """
-Database module for the voice channel service.
+Voice Channel Service Database Module
+
+Provides database access and session management for the voice channel service.
 """
 
 from collections.abc import AsyncGenerator

@@ -1,9 +1,7 @@
 """
-gRPC server initialization for the bot gateway service.
+gRPC Server Initialization
 
-This module sets up the gRPC server for the bot gateway, registering services
-for guild management and voice channel operations. It listens for incoming
-gRPC requests and routes them to the appropriate service handlers.
+This module initializes the gRPC server for the bot gateway service.
 """
 
 from __future__ import annotations
@@ -17,13 +15,15 @@ import grpc
 if TYPE_CHECKING:
     from nextcord.ext import commands
 
-from ...settings import settings
+from ..settings import settings
 
 logger = logging.getLogger(__name__)
 
 
 async def serve(bot: commands.Bot) -> None:
-    """Starts the gRPC server for the bot gateway service.
+    """|coro|
+
+    Starts the gRPC server for the bot gateway service.
 
     Parameters
     ----------
@@ -33,8 +33,10 @@ async def serve(bot: commands.Bot) -> None:
     server = grpc.aio.server()
     server.add_insecure_port(f"[::]:{settings.grpc_port}")
 
-    from .guild import register_guild_services
-    from .voice_channel import register_voice_channel_services
+    from bot_gateway.features.guild.services.grpc import register_guild_services
+    from bot_gateway.features.voice_channel.services.grpc import (
+        register_voice_channel_services,
+    )
 
     register_guild_services(server, bot)
     register_voice_channel_services(server, bot)
