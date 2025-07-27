@@ -28,10 +28,10 @@ class ErrorResponse(BaseModel):
 
     _registry: ClassVar[dict[str, type[ErrorResponse]]] = {}
 
-    def __init_subclass__(cls, *, code: str, **kwargs: Any):
+    def __init_subclass__(cls, *, error_code: str, **kwargs: Any):
         super().__init_subclass__(**kwargs)
-        cls.error_code = code
-        ErrorResponse._registry[code] = cls
+        cls.error_code = error_code
+        ErrorResponse._registry[error_code] = cls
 
     @classmethod
     def for_error_code(cls, error_code: str) -> type[ErrorResponse]:

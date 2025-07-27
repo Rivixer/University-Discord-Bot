@@ -53,12 +53,15 @@ class ChannelNotManaged(DomainException):
         HTTP status code 404 Not Found.
     error_code : VoiceChannelErrorCode
         VoiceChannelErrorCode.CHANNEL_NOT_MANAGED.
+    message: str | None
+        Optional human-readable message describing the error.
     """
 
-    def __init__(self):
+    def __init__(self, message: str | None = None):
         super().__init__(
             status_code=404,
             error_code=VoiceChannelErrorCode.CHANNEL_NOT_MANAGED,
+            message=message,
         )
 
 
@@ -71,11 +74,14 @@ class RenameLimitExceeded(DomainException):
         HTTP status code 429 Too Many Requests.
     error_code : VoiceChannelErrorCode
         VoiceChannelErrorCode.RENAME_LIMIT_EXCEEDED.
+    message: str | None
+        Optional human-readable message describing the error.
     """
 
-    def __init__(self, reset_at: datetime):
+    def __init__(self, reset_at: datetime, message: str | None = None):
         super().__init__(
             status_code=429,
             error_code=VoiceChannelErrorCode.RENAME_LIMIT_EXCEEDED,
             cooldown_reset_at=reset_at,
+            message=message,
         )

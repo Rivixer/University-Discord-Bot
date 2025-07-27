@@ -1,5 +1,5 @@
 """
-Voice Channel Service API Router
+Voice Channel Service Management API Router
 
 Defines the API endpoints for managing voice channels.
 """
@@ -117,7 +117,7 @@ async def get_rename_status(guild_id: int, channel_id: int) -> RenameStatusRespo
         )
 
         if not (state := result.scalar_one_or_none()):
-            raise ChannelNotManaged()
+            raise ChannelNotManaged
 
         now = datetime.now(timezone.utc)
         if (
@@ -181,7 +181,7 @@ async def rename_channel(req: RenameChannelRequest) -> RenameChannelResponse:
         )
 
         if not (state := result.scalar_one_or_none()):
-            raise ChannelNotManaged()
+            raise ChannelNotManaged
 
         if (
             state.rename_window_start is None

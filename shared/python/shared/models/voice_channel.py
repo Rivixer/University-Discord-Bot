@@ -32,23 +32,19 @@ class VoiceChannelErrorCode(str, Enum):
     RENAME_LIMIT_EXCEEDED = "rename_limit_exceeded"
 
 
-class RenameLimitExceededErrorResponse(ErrorResponse):
+class RenameLimitExceededErrorResponse(
+    ErrorResponse,
+    error_code=VoiceChannelErrorCode.RENAME_LIMIT_EXCEEDED,
+):
     """Error response for when the rename limit has been exceeded.
 
     Attributes
     ----------
-    error_code : str
-        The error code indicating the type of error.
-        Should be "max_renames_reached".
-    message : str
-        An optional human-readable message describing the error.
     cooldown_reset_at : datetime | None
         The time when the rename cooldown resets,
         or None if no cooldown is active.
-
     """
 
-    error_code: str = VoiceChannelErrorCode.RENAME_LIMIT_EXCEEDED
     cooldown_reset_at: datetime | None = None
 
 
