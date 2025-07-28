@@ -9,7 +9,7 @@ from __future__ import annotations
 from datetime import datetime
 from enum import Enum
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from .error_response import ErrorResponse
 
@@ -21,6 +21,8 @@ class VoiceChannelErrorCode(str, Enum):
     ----------
     UNKNOWN_ERROR : str
         An unknown error.
+    CONFIG_NOT_FOUND : str
+        The service configuration was not found.
     CHANNEL_NOT_MANAGED : str
         The channel is not managed.
     RENAME_LIMIT_EXCEEDED : str
@@ -28,6 +30,8 @@ class VoiceChannelErrorCode(str, Enum):
     """
 
     UNKNOWN_ERROR = "unknown_error"
+    CONFIG_NOT_FOUND = "config_not_found"
+    NAME_TOO_LONG = "name_too_long"
     CHANNEL_NOT_MANAGED = "channel_not_managed"
     RENAME_LIMIT_EXCEEDED = "rename_limit_exceeded"
 
@@ -58,6 +62,44 @@ class IsManagedResponse(BaseModel):
     """
 
     is_managed: bool
+
+
+class ServiceConfigUpdateRequest(BaseModel):
+    """Request model for updating the service configuration.
+
+    Attributes
+    ----------
+    category_id : int | None
+        The ID of the category to set.
+    default_name_template : str | None
+        The default name template for voice channels.
+    available_names : list[str] | None
+        List of available names for voice channels.
+    """
+
+    category_id: int | None
+    default_name_template: str
+    available_names: list[str]
+
+
+class ServiceConfigResponse(BaseModel):
+    """Response model for the service configuration.
+
+    Attributes
+    ----------
+    category_id : int | None
+        The ID of the category where voice channels are created.
+    default_name_template : str
+        The default name template for voice channels.
+    available_names : list[str]
+        List of available names for voice channels.
+    """
+
+    model_config = ConfigDict(from_attributes=True)
+
+    category_id: int | None
+    default_name_template: str
+    available_names: list[str]
 
 
 class RenameChannelRequest(BaseModel):

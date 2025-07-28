@@ -69,18 +69,21 @@ class VoiceChannelCreatedEvent(google.protobuf.message.Message):
     GUILD_ID_FIELD_NUMBER: builtins.int
     CHANNEL_ID_FIELD_NUMBER: builtins.int
     CATEGORY_ID_FIELD_NUMBER: builtins.int
+    NAME_FIELD_NUMBER: builtins.int
     guild_id: builtins.int
     channel_id: builtins.int
     category_id: builtins.int
+    name: builtins.str
     def __init__(
         self,
         *,
         guild_id: builtins.int = ...,
         channel_id: builtins.int = ...,
         category_id: builtins.int | None = ...,
+        name: builtins.str = ...,
     ) -> None: ...
     def HasField(self, field_name: typing.Literal["_category_id", b"_category_id", "category_id", b"category_id"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing.Literal["_category_id", b"_category_id", "category_id", b"category_id", "channel_id", b"channel_id", "guild_id", b"guild_id"]) -> None: ...
+    def ClearField(self, field_name: typing.Literal["_category_id", b"_category_id", "category_id", b"category_id", "channel_id", b"channel_id", "guild_id", b"guild_id", "name", b"name"]) -> None: ...
     def WhichOneof(self, oneof_group: typing.Literal["_category_id", b"_category_id"]) -> typing.Literal["category_id"] | None: ...
 
 global___VoiceChannelCreatedEvent = VoiceChannelCreatedEvent

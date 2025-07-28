@@ -106,9 +106,14 @@ def handle_api_errors(
                     detail = payload.get("detail", payload)
                     resp_cls = ErrorResponse.for_error_code(detail["error_code"])
                     err = resp_cls.model_validate(detail)
-                except ValidationError:
+                except (TypeError, KeyError, ValidationError):
                     err = ErrorResponse(message=e.response.text)
-                logger.warning("HTTP Status Error: %s", err)
+                logger.warning(
+                    "HTTP Status Error (%s) [%s]: %s ",
+                    e.response.status_code,
+                    e.request.url,
+                    err,
+                )
                 raise http_error_cls(e.response.status_code, err) from e
 
         return wrapper

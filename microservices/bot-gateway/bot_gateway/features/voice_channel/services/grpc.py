@@ -65,6 +65,7 @@ class VoiceChannelSyncServicer(VoiceChannelStateServiceServicer):
                 state_msg.channel_states.add(
                     channel_id=channel.id,
                     active_users=len(channel.members),
+                    name=channel.name,
                 )
         return response
 

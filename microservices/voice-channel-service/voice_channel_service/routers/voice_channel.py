@@ -17,12 +17,13 @@ from shared.models.voice_channel import (
     RenameChannelRequest,
     RenameChannelResponse,
     RenameStatusResponse,
+    VoiceChannelErrorCode,
 )
 from shared.redis_client import RedisPublisher
 
 from ..database import get_session
-from ..exceptions import ChannelNotManaged, RenameLimitExceeded
-from ..models import ChannelState, ServiceConfig
+from ..exceptions import ChannelNotManaged, DomainException, RenameLimitExceeded
+from ..models import ChannelState
 from ..rename_scheduler import schedule_cooldown
 from ..settings import settings
 
@@ -56,29 +57,6 @@ async def is_managed_channel(channel_id: int) -> IsManagedResponse:
 
         channel = result.scalar_one_or_none()
         return IsManagedResponse(is_managed=channel is not None)
-
-
-@router.get("/is-managed", response_model=IsManagedResponse)
-async def is_managed_category(category_id: int) -> IsManagedResponse:
-    """Checks if a voice channel category is managed by the service.
-
-    Parameters
-    ----------
-    category_id : int
-        The ID of the category to check.
-
-    Returns
-    -------
-    IsManagedResponse
-        Response indicating whether the category is managed.
-    """
-    async with get_session() as session:
-        result = await session.execute(
-            select(ServiceConfig).where(ServiceConfig.category_id == category_id)
-        )
-
-        config = result.scalar_one_or_none()
-        return IsManagedResponse(is_managed=config is not None)
 
 
 @router.get(
@@ -145,6 +123,7 @@ async def get_rename_status(guild_id: int, channel_id: int) -> RenameStatusRespo
     "/rename",
     response_model=RenameChannelResponse,
     responses={
+        400: {"model": ErrorResponse, "description": "Invalid request parameters"},
         404: {"model": ErrorResponse, "description": "ChannelState not found"},
         429: {"model": ErrorResponse, "description": "Too many renames"},
     },
@@ -165,10 +144,18 @@ async def rename_channel(req: RenameChannelRequest) -> RenameChannelResponse:
     Raises
     ------
     HTTPException
+        400: Invalid request parameters.
         404: Channel not managed or not found.
         429: Rename limit reached (with details: :class:`RenameLimitExceededErrorResponse`).
     """
     now = datetime.now(timezone.utc)
+
+    if len(req.new_name) > 100:
+        raise DomainException(
+            status_code=400,
+            error_code=VoiceChannelErrorCode.NAME_TOO_LONG,
+            message="Channel name must be 100 characters or less",
+        )
 
     async with get_session() as session:
         result = await session.execute(

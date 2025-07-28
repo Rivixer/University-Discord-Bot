@@ -1,7 +1,5 @@
 """
 Voice Channel Modals
-
-This module defines modals for renaming voice channels and changing user limits in Discord.
 """
 
 from __future__ import annotations
@@ -10,7 +8,7 @@ import asyncio
 import logging
 from typing import TYPE_CHECKING, override
 
-from nextcord import VoiceChannel
+from nextcord import TextInputStyle, VoiceChannel
 from nextcord.ui import Modal, View
 from nextcord.ui import TextInput as NextcordTextInput
 from nextcord.utils import format_dt
@@ -24,7 +22,7 @@ from shared.redis_client import RedisSubscriber
 if TYPE_CHECKING:
     from bot_gateway.types import Interaction
 
-    from .views import VoiceChannelPanelView
+    from .views import VoiceChannelConfigView, VoiceChannelPanelView
     from ..services.api_client import VoiceChannelApiClient
     from ..services.manager import DiscordVoiceChannelManager
 
@@ -55,6 +53,7 @@ class RenameModal(Modal):
         self.channel_name_input = TextInput(
             label="New channel name",
             placeholder="Enter new channel name",
+            max_length=100,
             required=True,
         )
 
@@ -132,6 +131,7 @@ class ChangeUserLimitModal(Modal):
         self.user_limit_input = TextInput(
             label="New user limit",
             placeholder="1-99",
+            max_length=2,
             required=True,
         )
 
@@ -154,4 +154,77 @@ class ChangeUserLimitModal(Modal):
         )
 
         await self.manager.edit_channel(interaction.channel, user_limit=int(new_limit))
+        await self.parent_view.edit_message(interaction)
+
+
+class ChangeDefaultNameTemplateModal(Modal):
+    """Modal for changing the default name template of a voice channel."""
+
+    api_client: VoiceChannelApiClient
+    parent_view: VoiceChannelConfigView
+    default_name_template_input: TextInput
+
+    def __init__(
+        self,
+        api_client: VoiceChannelApiClient,
+        view: VoiceChannelConfigView,
+        default_text_input_value: str = "",
+    ) -> None:
+        super().__init__(title="Change default name template", timeout=60)
+        self.api_client = api_client
+        self.parent_view = view
+
+        self.default_name_template_input = TextInput(
+            label="New default name template",
+            placeholder=r"Room {n}",
+            default_value=default_text_input_value,
+            required=True,
+        )
+
+        self.add_item(self.default_name_template_input)  # type: ignore
+
+    @override
+    async def callback(self, interaction: Interaction) -> None:
+        new_template = self.default_name_template_input.value
+        assert new_template is not None, (
+            "Default name template input should not be None"
+        )
+
+        self.parent_view.default_name_template_temp = new_template
+        await self.parent_view.edit_message(interaction)
+
+
+class ChangeAvailableNamesModal(Modal):
+    """Modal for changing the available names for voice channels."""
+
+    api_client: VoiceChannelApiClient
+    parent_view: VoiceChannelConfigView
+    available_names_input: TextInput
+
+    def __init__(
+        self,
+        api_client: VoiceChannelApiClient,
+        view: VoiceChannelConfigView,
+        available_names: list[str],
+    ) -> None:
+        super().__init__(title="Change available names", timeout=60)
+        self.api_client = api_client
+        self.parent_view = view
+
+        self.available_names_input = TextInput(
+            label="Available names",
+            default_value="\n".join(available_names),
+            placeholder="Room 1\nRoom 2\nRoom 3",
+            style=TextInputStyle.paragraph,
+            required=True,
+        )
+
+        self.add_item(self.available_names_input)  # type: ignore
+
+    @override
+    async def callback(self, interaction: Interaction) -> None:
+        value = self.available_names_input.value
+        assert value is not None, "Available names input should not be None"
+
+        self.parent_view.available_names_temp = value.splitlines()
         await self.parent_view.edit_message(interaction)

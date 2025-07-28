@@ -96,6 +96,8 @@ class VoiceChannelSyncClient:
 
     @staticmethod
     def _to_guild_category(cfg: ServiceConfig) -> GuildCategory:
+        if cfg.category_id is None:
+            raise ValueError(f"ServiceConfig needs a category_id: {cfg.guild_id=}")
         return GuildCategory(guild_id=cfg.guild_id, category_id=cfg.category_id)
 
     async def _persist_states(
@@ -151,6 +153,7 @@ class VoiceChannelSyncClient:
                                 guild_id=state.guild_id,
                                 channel_id=ch.channel_id,
                                 active_users=ch.active_users,
+                                name=ch.name,
                             )
                         )
 

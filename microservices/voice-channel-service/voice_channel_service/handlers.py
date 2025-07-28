@@ -9,25 +9,23 @@ to the appropriate handler, and applies all business logic for:
 """
 
 import asyncio
-import inspect
 import logging
-from collections.abc import Awaitable, Callable
-from typing import Any
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from shared.gen.guild.v1.envelope_pb2 import GuildEventEnvelope
-from shared.gen.voice_channel.v1.envelope_pb2 import (
-    GatewayEnvelope,
-    ServiceEnvelope,
+from shared.gen.voice_channel.v1.envelope_pb2 import GatewayEnvelope
+from shared.gen.voice_channel.v1.events_pb2 import (
+    BotVoiceChannelRenameEvent,
+    VoiceChannelCreatedEvent,
+    VoiceChannelDeletedEvent,
+    VoiceChannelUserJoinedEvent,
+    VoiceChannelUserLeftEvent,
 )
-from shared.gen.voice_channel.v1.requests_pb2 import (
-    CreateVoiceChannelRequest,
-    DeleteVoiceChannelRequest,
-)
-from shared.redis_client import RedisPublisher, RedisSubscriber
+from shared.redis_client import RedisSubscriber
 
+from .actions import request_channel_creation, request_channel_deletion
 from .database import get_session
 from .models import ChannelState, ServiceConfig
 from .rename_scheduler import cancel_cooldown
@@ -36,7 +34,6 @@ from .settings import settings
 logger = logging.getLogger(__name__)
 
 _guild_locks: dict[int, asyncio.Lock] = {}
-_redis_request_publisher = RedisPublisher(f"{settings.redis_channel_base}:service")
 
 
 def _lock_for_guild(guild_id: int) -> asyncio.Lock:
@@ -61,56 +58,71 @@ async def _get_guild_config(
     )
 
 
-async def _handle_voice_channel_create(guild_id: int, channel_id: int) -> None:
+async def _handle_voice_channel_create(event: VoiceChannelCreatedEvent) -> None:
     async with get_session() as session:
-        if await _get_channel_state(session, channel_id):
+        if await _get_channel_state(session, event.channel_id):
             logger.debug(
-                "Channel %d already tracked", channel_id, extra={"guild_id": guild_id}
+                "Channel %d already tracked",
+                event.channel_id,
+                extra={"guild_id": event.guild_id},
             )
             return
 
-        session.add(ChannelState(channel_id=channel_id, guild_id=guild_id))
+        session.add(
+            ChannelState(
+                channel_id=event.channel_id,
+                guild_id=event.guild_id,
+                name=event.name,
+            )
+        )
         await session.commit()
-        logger.info("Registered new voice channel %d in guild %d", channel_id, guild_id)
+
+        logger.info(
+            "Registered new voice channel %d in guild %d",
+            event.channel_id,
+            event.guild_id,
+        )
 
 
-async def _handle_voice_channel_delete(channel_id: int) -> None:
+async def _handle_voice_channel_delete(event: VoiceChannelDeletedEvent) -> None:
     async with get_session() as session:
-        if not (state := await _get_channel_state(session, channel_id)):
-            logger.debug("Deleted channel %d not tracked", channel_id)
+        if not (state := await _get_channel_state(session, event.channel_id)):
+            logger.debug("Deleted channel %d not tracked", event.channel_id)
             return
 
         await session.delete(state)
         await session.commit()
-        logger.info("Removed deleted voice channel %d", channel_id)
+        logger.info("Removed deleted voice channel %d", event.channel_id)
 
-    cancel_cooldown(state.guild_id, channel_id)
+    cancel_cooldown(state.guild_id, event.channel_id)
 
 
-async def _handle_user_joined(guild_id: int, channel_id: int) -> None:
+async def _handle_user_joined(event: VoiceChannelUserJoinedEvent) -> None:
     async with get_session() as session:
-        if not (config := await _get_guild_config(session, guild_id)):
-            logger.debug("No voice config for guild=%d; skipping user join", guild_id)
+        if not (config := await _get_guild_config(session, event.guild_id)):
+            logger.debug(
+                "No voice config for guild=%d; skipping user join", event.guild_id
+            )
             return
 
-        if not (state := await _get_channel_state(session, channel_id)):
-            state = ChannelState(guild_id=guild_id, channel_id=channel_id)
+        if not (state := await _get_channel_state(session, event.channel_id)):
+            state = ChannelState(guild_id=event.guild_id, channel_id=event.channel_id)
             session.add(state)
 
         state.active_users += 1
         await session.commit()
 
-        logger.debug(
+        logger.info(
             "User joined: guild=%d channel=%d active_users=%d",
-            guild_id,
-            channel_id,
+            event.guild_id,
+            event.channel_id,
             state.active_users,
         )
 
         empty_channels = (
             await session.scalars(
                 select(ChannelState).where(
-                    ChannelState.guild_id == guild_id,
+                    ChannelState.guild_id == event.guild_id,
                     ChannelState.active_users == 0,
                     ~ChannelState.pending_deletion,
                 )
@@ -118,35 +130,29 @@ async def _handle_user_joined(guild_id: int, channel_id: int) -> None:
         ).all()
 
         if not empty_channels:
-            new_name = await _generate_channel_name(session, config)
-            create_req = CreateVoiceChannelRequest(
-                guild_id=guild_id,
-                category_id=config.category_id,
-                name=new_name,
-            )
-            envelope = ServiceEnvelope(create_channel_request=create_req)
-            await _redis_request_publisher.publish(envelope)
+            await request_channel_creation(config)
 
 
-async def _handle_user_left(guild_id: int, channel_id: int) -> None:
+async def _handle_user_left(event: VoiceChannelUserLeftEvent) -> None:
+    guild_id = event.guild_id
     async with get_session() as session:
         if not await _get_guild_config(session, guild_id):
             logger.debug("No voice config for guild=%d; skipping user left", guild_id)
             return
 
-        if not (state := await _get_channel_state(session, channel_id)):
+        if not (state := await _get_channel_state(session, event.channel_id)):
             logger.debug(
-                "User left unknown channel %d in guild %d", channel_id, guild_id
+                "User left unknown channel %d in guild %d", event.channel_id, guild_id
             )
             return
 
         state.active_users = max(0, state.active_users - 1)
         await session.commit()
 
-        logger.debug(
+        logger.info(
             "User left: guild=%d channel=%d active_users=%d",
             guild_id,
-            channel_id,
+            event.channel_id,
             state.active_users,
         )
 
@@ -165,28 +171,27 @@ async def _handle_user_left(guild_id: int, channel_id: int) -> None:
                 state.pending_deletion = True
                 await session.commit()
 
-                cancel_cooldown(state.guild_id, channel_id)
-                delete_req = DeleteVoiceChannelRequest(channel_id=channel_id)
-                envelope = ServiceEnvelope(delete_channel_request=delete_req)
-                await _redis_request_publisher.publish(envelope)
+                cancel_cooldown(state.guild_id, event.channel_id)
+                await request_channel_deletion(event.channel_id)
 
 
-async def _generate_channel_name(session: AsyncSession, config: ServiceConfig) -> str:
-    # TODO: Implement proper name generation logic
-    return config.default_name_template.replace("{n}", "X")
+async def _handle_voice_channel_rename(event: BotVoiceChannelRenameEvent) -> None:
+    async with get_session() as session:
+        if not (state := await _get_channel_state(session, event.channel_id)):
+            logger.debug(
+                "Unknown channel %d in guild %d", event.channel_id, event.guild_id
+            )
+            return
 
+        state.name = event.new_name
+        await session.commit()
 
-_EVENT_HANDLERS: dict[str, Callable[..., Awaitable[None]]] = {
-    "created_event": _handle_voice_channel_create,
-    "deleted_event": _handle_voice_channel_delete,
-    "user_joined_event": _handle_user_joined,
-    "user_left_event": _handle_user_left,
-}
-
-_HANDLER_PARAMS: dict[str, set[str]] = {}
-for evt_name, fn in _EVENT_HANDLERS.items():
-    sig = inspect.signature(fn)
-    _HANDLER_PARAMS[evt_name] = set(sig.parameters.keys())
+        logger.info(
+            "Renamed voice channel %d in guild %d to '%s'",
+            event.channel_id,
+            event.guild_id,
+            event.new_name,
+        )
 
 
 @RedisSubscriber.subscribe(f"{settings.redis_channel_base}:gateway")
@@ -209,11 +214,6 @@ async def handle_voice_channel_event(event: GatewayEnvelope) -> None:
         logger.warning("Received empty voice event envelope")
         return
 
-    handler = _EVENT_HANDLERS.get(event_type)
-    if not handler:
-        logger.warning("Unhandled voice event type: %s", event_type)
-        return
-
     payload = getattr(event, event_type)
     guild_id = getattr(payload, "guild_id", None)
 
@@ -227,25 +227,16 @@ async def handle_voice_channel_event(event: GatewayEnvelope) -> None:
         lock = _lock_for_guild(guild_id)
 
     async with lock:
-        allowed = _HANDLER_PARAMS[event_type]
-        kwargs: dict[str, Any] = {}
-        if "guild_id" in allowed and hasattr(payload, "guild_id"):
-            kwargs["guild_id"] = payload.guild_id
-        if "channel_id" in allowed and hasattr(payload, "channel_id"):
-            kwargs["channel_id"] = payload.channel_id
-
-        await handler(**kwargs)
-
-
-async def _handle_guild_left(guild_id: int) -> None:
-    _guild_locks.pop(guild_id, None)
-    async with get_session() as session:
-        if not (config := await _get_guild_config(session, guild_id)):
-            logger.debug("No voice config for guild=%d; skipping guild left", guild_id)
-            return
-
-        await session.delete(config)
-        await session.commit()
+        if event_type == "created_event":
+            await _handle_voice_channel_create(event.created_event)
+        elif event_type == "deleted_event":
+            await _handle_voice_channel_delete(event.deleted_event)
+        elif event_type == "user_joined_event":
+            await _handle_user_joined(event.user_joined_event)
+        elif event_type == "user_left_event":
+            await _handle_user_left(event.user_left_event)
+        elif event_type == "rename_event":
+            await _handle_voice_channel_rename(event.rename_event)
 
 
 @RedisSubscriber.subscribe(f"{settings.redis_guild_base}:gateway")
@@ -273,4 +264,13 @@ async def handle_guild_event(event: GuildEventEnvelope) -> None:
         guild_id = data.guild_id
         lock = _lock_for_guild(guild_id)
         async with lock:
-            await _handle_guild_left(guild_id)
+            _guild_locks.pop(guild_id, None)
+            async with get_session() as session:
+                if not (config := await _get_guild_config(session, guild_id)):
+                    logger.debug(
+                        "No voice config for guild=%d; skipping guild left", guild_id
+                    )
+                    return
+
+                await session.delete(config)
+                await session.commit()

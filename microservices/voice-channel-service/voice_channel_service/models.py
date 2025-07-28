@@ -11,7 +11,7 @@ from datetime import datetime
 from sqlalchemy import BigInteger, Boolean, DateTime, Integer, String
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.mutable import MutableList
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, validates
 from sqlalchemy.schema import Index
 
 
@@ -51,6 +51,7 @@ class ChannelState(Base):
 
     channel_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
     guild_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    name: Mapped[str] = mapped_column(String(100), nullable=False)
     active_users: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     pending_deletion: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=False
@@ -84,7 +85,7 @@ class ServiceConfig(Base):
     __table_args__ = {"schema": _SCHEMA}
 
     guild_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
-    category_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    category_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     default_name_template: Mapped[str] = mapped_column(
         String, nullable=False, default="Room {n}"
     )
@@ -93,3 +94,10 @@ class ServiceConfig(Base):
         nullable=False,
         default=list,
     )
+
+    @validates("available_names")
+    def _validate_available_names(self, key: str, names: list[str]) -> list[str]:
+        too_long = [n for n in names if len(n) > 100]
+        if too_long:
+            raise ValueError(f"Following names exceed 100 chars: {too_long!r}")
+        return names

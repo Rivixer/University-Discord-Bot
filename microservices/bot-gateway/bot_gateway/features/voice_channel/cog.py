@@ -12,15 +12,13 @@ import asyncio
 import logging
 from typing import override
 
-from nextcord import (
-    Member,
-    VoiceChannel,
-    VoiceState,
-)
+from nextcord import Member, VoiceChannel, VoiceState, slash_command
 from nextcord.abc import GuildChannel
 from nextcord.ext import commands
 
+from bot_gateway.core.exceptions import ApiClientError
 from bot_gateway.settings import settings
+from bot_gateway.types.interaction import Interaction
 from shared.gen.voice_channel.v1.envelope_pb2 import GatewayEnvelope, ServiceEnvelope
 from shared.gen.voice_channel.v1.events_pb2 import (
     BotVoiceChannelRenameEvent,
@@ -38,6 +36,7 @@ from shared.redis_client import (
 from .services.api_client import VoiceChannelApiClient
 from .services.manager import DiscordVoiceChannelManager
 from .services.panel import VoiceChannelPanelService
+from .ui.views import VoiceChannelConfigView
 
 logger = logging.getLogger(__name__)
 
@@ -137,6 +136,7 @@ class VoiceChannelCog(RedisPubSubHandlerCogMixin, commands.Cog):
             guild_id=channel.guild.id,
             channel_id=channel.id,
             category_id=channel.category_id,
+            name=channel.name,
         )
 
         envelope = GatewayEnvelope(created_event=event)
@@ -207,6 +207,35 @@ class VoiceChannelCog(RedisPubSubHandlerCogMixin, commands.Cog):
 
         else:
             logger.warning("Unhandled voice event: %s", request_type)
+
+    @slash_command(
+        name="voice_channel",
+        description="Manage voice channels and their configurations.",
+    )
+    async def voice_channel(self, interaction: Interaction):
+        if not interaction.guild:
+            await interaction.response.send_message(
+                "This command can only be used in a server.",
+                ephemeral=True,
+            )
+            return
+
+        try:
+            view, embed = await VoiceChannelConfigView.create(
+                interaction.guild, self.api_client
+            )
+        except ApiClientError as e:
+            await interaction.response.send_message(
+                f"Error retrieving configuration ({e.status_code}): {e.error_response.error_code}",
+                ephemeral=True,
+            )
+            return
+
+        await interaction.response.send_message(
+            embed=embed,
+            view=view,
+            ephemeral=True,
+        )
 
 
 def setup(bot: commands.Bot):

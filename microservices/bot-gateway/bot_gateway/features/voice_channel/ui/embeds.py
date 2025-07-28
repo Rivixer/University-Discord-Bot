@@ -1,8 +1,5 @@
 """
 Voice Channel Panel Embed
-
-This module defines the embed for the voice channel panel in the bot gateway.
-It includes the voice channel name, member list, and rename status.
 """
 
 from __future__ import annotations
@@ -55,3 +52,27 @@ class VoiceChannelPanelEmbed(Embed):
                 value=format_dt(rename_status.cooldown_reset_at, "R"),
                 inline=False,
             )
+
+
+class VoiceChannelConfigEmbed(Embed):
+    """Embed for the voice channel configuration."""
+
+    def __init__(self, default_name_template: str, available_names: list[str]) -> None:
+        title = "Configuration for Voice Channel Service"
+        super().__init__(title=title, color=0x5865F2)
+
+        self.set_thumbnail(
+            url="https://cdn3.emoji.gg/emojis/6770-discord-voice-from-vega.png"
+        )
+
+        self.add_field(
+            name="Available names:",
+            value="\n".join(available_names),
+            inline=False,
+        )
+
+        self.add_field(
+            name="Default name template:",
+            value=default_name_template,
+            inline=False,
+        )

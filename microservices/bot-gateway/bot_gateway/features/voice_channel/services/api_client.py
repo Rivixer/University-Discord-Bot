@@ -15,6 +15,8 @@ from shared.models.voice_channel import (
     RenameChannelRequest,
     RenameChannelResponse,
     RenameStatusResponse,
+    ServiceConfigResponse,
+    ServiceConfigUpdateRequest,
 )
 
 logger = logging.getLogger(__name__)
@@ -65,7 +67,7 @@ class VoiceChannelApiClient:
 
         Raises
         ------
-        VoiceChannelServiceError
+        ApiClientError
             If there is a network error or if the service returns non-200 status code.
         """
         url = "/api/v1/voice-channel/is-managed"
@@ -95,7 +97,7 @@ class VoiceChannelApiClient:
 
         Raises
         ------
-        VoiceChannelServiceError
+        ApiClientError
             If there is a network error or if the service returns non-200 status code.
         """
         url = "/api/v1/voice-channel/rename-status"
@@ -130,6 +132,11 @@ class VoiceChannelApiClient:
         -------
         RenameChannelResponse
             The response from the voice channel service.
+
+        Raises
+        ------
+        ApiClientError
+            If there is a network error or if the service returns non-200 status code.
         """
         url = "/api/v1/voice-channel/rename"
         req = RenameChannelRequest(
@@ -143,3 +150,75 @@ class VoiceChannelApiClient:
         )
         resp.raise_for_status()
         return RenameChannelResponse(**resp.json())
+
+    @handle_api_errors()
+    async def get_service_config(self, guild_id: int) -> ServiceConfigResponse:
+        """|coro|
+
+        Retrieves the service configuration for a specific guild.
+
+        Parameters
+        ----------
+        guild_id : int
+            The ID of the guild to retrieve the configuration for.
+
+        Returns
+        -------
+        ServiceConfigResponse
+            The service configuration for the specified guild.
+
+        Raises
+        ------
+        ApiClientError
+            If there is a network error or if the service returns non-200 status code.
+        """
+        url = f"/api/v1/config/{guild_id}"
+        resp = await self._client.get(url)
+        resp.raise_for_status()
+        return ServiceConfigResponse(**resp.json())
+
+    @handle_api_errors()
+    async def update_service_config(
+        self,
+        guild_id: int,
+        category_id: int | None,
+        default_name_template: str,
+        available_names: list[str],
+    ) -> ServiceConfigResponse:
+        """|coro|
+
+        Updates the service configuration for a specific guild.
+
+        Parameters
+        ----------
+        guild_id : int
+            The ID of the guild to update the configuration for.
+        category_id : int | None
+            The ID of the category where voice channels are created.
+        default_name_template : str
+            The default name template for voice channels.
+        available_names : list[str]
+            List of available names for voice channels.
+
+        Returns
+        -------
+        ServiceConfigResponse
+            The updated service configuration for the specified guild.
+
+        Raises
+        ------
+        ApiClientError
+            If there is a network error or if the service returns non-200 status code.
+        """
+        url = f"/api/v1/config/{guild_id}"
+        req = ServiceConfigUpdateRequest(
+            category_id=category_id,
+            default_name_template=default_name_template,
+            available_names=available_names,
+        )
+        resp = await self._client.put(
+            url,
+            json=req.model_dump(mode="json"),
+        )
+        resp.raise_for_status()
+        return ServiceConfigResponse(**resp.json())

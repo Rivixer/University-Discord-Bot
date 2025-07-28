@@ -44,6 +44,27 @@ class DomainException(Exception):
             setattr(self, k, v)
 
 
+class ConfigNotFound(DomainException):
+    """Exception raised when the service configuration is not found.
+
+    Attributes
+    ----------
+    status_code : int
+        HTTP status code 404 Not Found.
+    error_code : VoiceChannelErrorCode
+        VoiceChannelErrorCode.CONFIG_NOT_FOUND.
+    message: str | None
+        Optional human-readable message describing the error.
+    """
+
+    def __init__(self, message: str | None = None):
+        super().__init__(
+            status_code=404,
+            error_code=VoiceChannelErrorCode.CONFIG_NOT_FOUND,
+            message=message,
+        )
+
+
 class ChannelNotManaged(DomainException):
     """Exception raised when a channel is not managed by the voice channel service.
 

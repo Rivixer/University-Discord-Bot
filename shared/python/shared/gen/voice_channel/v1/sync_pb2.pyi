@@ -87,14 +87,17 @@ class VoiceChannelState(google.protobuf.message.Message):
 
     CHANNEL_ID_FIELD_NUMBER: builtins.int
     ACTIVE_USERS_FIELD_NUMBER: builtins.int
+    NAME_FIELD_NUMBER: builtins.int
     channel_id: builtins.int
     active_users: builtins.int
+    name: builtins.str
     def __init__(
         self,
         *,
         channel_id: builtins.int = ...,
         active_users: builtins.int = ...,
+        name: builtins.str = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing.Literal["active_users", b"active_users", "channel_id", b"channel_id"]) -> None: ...
+    def ClearField(self, field_name: typing.Literal["active_users", b"active_users", "channel_id", b"channel_id", "name", b"name"]) -> None: ...
 
 global___VoiceChannelState = VoiceChannelState

@@ -24,7 +24,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1dvoice_channel/v1/events.proto\x12\x10voice_channel.v1\"~\n\x1bVoiceChannelUserJoinedEvent\x12\x10\n\x08guild_id\x18\x01 \x01(\x03\x12\x0f\n\x07user_id\x18\x02 \x01(\x03\x12\x12\n\nchannel_id\x18\x03 \x01(\x03\x12\x18\n\x0b\x63\x61tegory_id\x18\x04 \x01(\x03H\x00\x88\x01\x01\x42\x0e\n\x0c_category_id\"|\n\x19VoiceChannelUserLeftEvent\x12\x10\n\x08guild_id\x18\x01 \x01(\x03\x12\x0f\n\x07user_id\x18\x02 \x01(\x03\x12\x12\n\nchannel_id\x18\x03 \x01(\x03\x12\x18\n\x0b\x63\x61tegory_id\x18\x04 \x01(\x03H\x00\x88\x01\x01\x42\x0e\n\x0c_category_id\"j\n\x18VoiceChannelCreatedEvent\x12\x10\n\x08guild_id\x18\x01 \x01(\x03\x12\x12\n\nchannel_id\x18\x02 \x01(\x03\x12\x18\n\x0b\x63\x61tegory_id\x18\x03 \x01(\x03H\x00\x88\x01\x01\x42\x0e\n\x0c_category_id\"j\n\x18VoiceChannelDeletedEvent\x12\x10\n\x08guild_id\x18\x01 \x01(\x03\x12\x12\n\nchannel_id\x18\x02 \x01(\x03\x12\x18\n\x0b\x63\x61tegory_id\x18\x03 \x01(\x03H\x00\x88\x01\x01\x42\x0e\n\x0c_category_id\"T\n\x1a\x42otVoiceChannelRenameEvent\x12\x10\n\x08guild_id\x18\x01 \x01(\x03\x12\x12\n\nchannel_id\x18\x02 \x01(\x03\x12\x10\n\x08new_name\x18\x03 \x01(\t\"Q\n)BotVoiceChannelRenameCooldownExpiredEvent\x12\x10\n\x08guild_id\x18\x01 \x01(\x03\x12\x12\n\nchannel_id\x18\x02 \x01(\x03\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1dvoice_channel/v1/events.proto\x12\x10voice_channel.v1\"~\n\x1bVoiceChannelUserJoinedEvent\x12\x10\n\x08guild_id\x18\x01 \x01(\x03\x12\x0f\n\x07user_id\x18\x02 \x01(\x03\x12\x12\n\nchannel_id\x18\x03 \x01(\x03\x12\x18\n\x0b\x63\x61tegory_id\x18\x04 \x01(\x03H\x00\x88\x01\x01\x42\x0e\n\x0c_category_id\"|\n\x19VoiceChannelUserLeftEvent\x12\x10\n\x08guild_id\x18\x01 \x01(\x03\x12\x0f\n\x07user_id\x18\x02 \x01(\x03\x12\x12\n\nchannel_id\x18\x03 \x01(\x03\x12\x18\n\x0b\x63\x61tegory_id\x18\x04 \x01(\x03H\x00\x88\x01\x01\x42\x0e\n\x0c_category_id\"x\n\x18VoiceChannelCreatedEvent\x12\x10\n\x08guild_id\x18\x01 \x01(\x03\x12\x12\n\nchannel_id\x18\x02 \x01(\x03\x12\x18\n\x0b\x63\x61tegory_id\x18\x03 \x01(\x03H\x00\x88\x01\x01\x12\x0c\n\x04name\x18\x04 \x01(\tB\x0e\n\x0c_category_id\"j\n\x18VoiceChannelDeletedEvent\x12\x10\n\x08guild_id\x18\x01 \x01(\x03\x12\x12\n\nchannel_id\x18\x02 \x01(\x03\x12\x18\n\x0b\x63\x61tegory_id\x18\x03 \x01(\x03H\x00\x88\x01\x01\x42\x0e\n\x0c_category_id\"T\n\x1a\x42otVoiceChannelRenameEvent\x12\x10\n\x08guild_id\x18\x01 \x01(\x03\x12\x12\n\nchannel_id\x18\x02 \x01(\x03\x12\x10\n\x08new_name\x18\x03 \x01(\t\"Q\n)BotVoiceChannelRenameCooldownExpiredEvent\x12\x10\n\x08guild_id\x18\x01 \x01(\x03\x12\x12\n\nchannel_id\x18\x02 \x01(\x03\x62\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -36,11 +36,11 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['_VOICECHANNELUSERLEFTEVENT']._serialized_start=179
   _globals['_VOICECHANNELUSERLEFTEVENT']._serialized_end=303
   _globals['_VOICECHANNELCREATEDEVENT']._serialized_start=305
-  _globals['_VOICECHANNELCREATEDEVENT']._serialized_end=411
-  _globals['_VOICECHANNELDELETEDEVENT']._serialized_start=413
-  _globals['_VOICECHANNELDELETEDEVENT']._serialized_end=519
-  _globals['_BOTVOICECHANNELRENAMEEVENT']._serialized_start=521
-  _globals['_BOTVOICECHANNELRENAMEEVENT']._serialized_end=605
-  _globals['_BOTVOICECHANNELRENAMECOOLDOWNEXPIREDEVENT']._serialized_start=607
-  _globals['_BOTVOICECHANNELRENAMECOOLDOWNEXPIREDEVENT']._serialized_end=688
+  _globals['_VOICECHANNELCREATEDEVENT']._serialized_end=425
+  _globals['_VOICECHANNELDELETEDEVENT']._serialized_start=427
+  _globals['_VOICECHANNELDELETEDEVENT']._serialized_end=533
+  _globals['_BOTVOICECHANNELRENAMEEVENT']._serialized_start=535
+  _globals['_BOTVOICECHANNELRENAMEEVENT']._serialized_end=619
+  _globals['_BOTVOICECHANNELRENAMECOOLDOWNEXPIREDEVENT']._serialized_start=621
+  _globals['_BOTVOICECHANNELRENAMECOOLDOWNEXPIREDEVENT']._serialized_end=702
 # @@protoc_insertion_point(module_scope)
